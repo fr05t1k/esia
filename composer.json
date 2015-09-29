@@ -1,0 +1,10 @@
+{
+    "name": "happycitizen/esia",
+    "description": "OpenID ESIA authenticating",
+    "keywords": ["esia", "openid", "egov"],
+    "autoload": {
+        "psr-4": {
+            "esia\\": ""
+        }
+    }
+}
