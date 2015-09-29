@@ -22,6 +22,7 @@ class OpenId
     public $privateKeyPath;
     public $privateKeyPassword;
     public $certPath;
+    public $oid = null;
 
     protected $scope = 'http://esia.gosuslugi.ru/usr_inf';
 
@@ -34,7 +35,6 @@ class OpenId
 
     private $url = null;
     private $token = null;
-    private $oid = null;
 
     public function __construct(array $config = [])
     {
@@ -232,25 +232,56 @@ class OpenId
         if ($result) {
 
             if ($result->size > 0) {
-                $contacts = [];
-                foreach ($result->elements as $element) {
-
-                    $request = $this->buildRequest();
-                    $contact = $request->call($element, true);
-
-                    if ($contact) {
-                        array_push($contacts, $contact);
-                    }
-
-
-                }
-
+                $contacts = $this->collectArrayElements($result->elements);
                 return $contacts;
             }
         }
 
         return $result;
 
+    }
+
+
+    /**
+     * @throws \Exception
+     */
+    public function getAddressInfo()
+    {
+
+        $url = $this->personUrl . '/' . $this->oid . '/addrs';
+
+        $request = $this->buildRequest();
+
+        $result = $request->call($url);
+
+        if ($result) {
+
+            if ($result->size > 0) {
+                $addresses = $this->collectArrayElements($result->elements);
+                return $addresses;
+            }
+        }
+
+        return $result;
+
+    }
+
+    protected function collectArrayElements($elemetns)
+    {
+        $result = [];
+        foreach ($elemetns as $element) {
+
+            $request = $this->buildRequest();
+            $source = $request->call($element, true);
+
+            if ($source) {
+                array_push($result, $source);
+            }
+
+
+        }
+
+        return $result;
     }
 
     /**
