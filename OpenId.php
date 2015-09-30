@@ -47,6 +47,12 @@ class OpenId
 
 
     /**
+     * Return an url for authentication
+     *
+     * ```
+     *     <a href="<?=$esia->getUrl()?>">Login</a>
+     * ```
+     *
      * @return null|string
      */
     public function getUrl()
@@ -78,6 +84,8 @@ class OpenId
     }
 
     /**
+     * Return an url for request to get an access token
+     *
      * @return string
      */
     public function getTokenUrl()
@@ -86,6 +94,8 @@ class OpenId
     }
 
     /**
+     * Return an url for request to get an authorization code
+     *
      * @return string
      */
     public function getCodeUrl()
@@ -94,6 +104,8 @@ class OpenId
     }
 
     /**
+     * Return an url for request person information
+     *
      * @return string
      */
     public function getPersonUrl()
@@ -103,6 +115,8 @@ class OpenId
 
 
     /**
+     * Method collect a token with given code
+     *
      * @param $code
      * @return null
      */
@@ -159,6 +173,9 @@ class OpenId
 
 
     /**
+     * Algorithm for singing message which
+     * will be send in client_secret param
+     *
      * @param $message
      * @return bool|mixed
      */
@@ -206,6 +223,11 @@ class OpenId
     }
 
     /**
+     * Fetch person info from current person
+     *
+     * You must collect token person before
+     * calling this method
+     *
      * @throws \Exception
      */
     public function getPersonInfo()
@@ -218,6 +240,11 @@ class OpenId
     }
 
     /**
+     * Fetch contact info about current person
+     *
+     * You must collect token person before
+     * calling this method
+     *
      * @throws \Exception
      */
     public function getContactInfo()
@@ -243,6 +270,11 @@ class OpenId
 
 
     /**
+     * Fetch address from current person
+     *
+     * You must collect token person before
+     * calling this method
+     *
      * @throws \Exception
      */
     public function getAddressInfo()
@@ -266,10 +298,19 @@ class OpenId
 
     }
 
-    protected function collectArrayElements($elemetns)
+    /**
+     * This method can iterate on each element
+     * and fetch entities from esia by url
+     *
+     *
+     * @param $elements array of urls
+     * @return array
+     * @throws \Exception
+     */
+    protected function collectArrayElements($elements)
     {
         $result = [];
-        foreach ($elemetns as $element) {
+        foreach ($elements as $element) {
 
             $request = $this->buildRequest();
             $source = $request->call($element, true);
