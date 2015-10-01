@@ -329,7 +329,7 @@ class OpenId
      * @return Request
      * @throws \Exception
      */
-    protected function buildRequest()
+    public function buildRequest()
     {
         if (!$this->token) {
             throw new \Exception('Access token is empty');

@@ -1,5 +1,5 @@
 {
-    "name": "happycitizen/esia",
+    "name": "fr05t1k/esia",
     "description": "OpenID ESIA authenticating",
     "keywords": ["esia", "openid", "egov"],
     "autoload": {
