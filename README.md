@@ -52,13 +52,23 @@ $contactInfo = $esia->getContactInfo();
 # Конфиг
 
 `clientId` - ID вашего приложения.
+
 `redirectUrl` - URL куда будет перенаправлен ответ с кодом.
+
 `portalUrl` - по умолчанию: `https://esia-portal1.test.gosuslugi.ru/`. Домен портала для авторизация (только домен).
+
 `codeUrl` - по умолчанию: `aas/oauth2/ac`. URL для получения кода.
+
 `tokenUrl` - по умолчанию: `aas/oauth2/te`. URL для получение токена.
+
 `scope` - по умолчанию: `http://esia.gosuslugi.ru/usr_inf`. Запрашиваемые права у пользователя.
+
 `privateKeyPath` - путь до приватного ключа.
+
 `privateKeyPassword` - пароль от приватного ключа.
+
 `certPath` - путь до сертификата.
+
 `tmpPath` - путь до дериктории где будет проходить подпись (должна быть доступна для записи).
+
 `log` - callable с одни параметром $message, в который будет передаваться сообщения лога.
