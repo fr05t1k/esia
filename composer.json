@@ -4,7 +4,7 @@
     "keywords": ["esia", "openid", "egov"],
     "autoload": {
         "psr-4": {
-            "esia\\": ""
+            "esia\\": "src/"
         }
     }
 }
