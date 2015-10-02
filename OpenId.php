@@ -53,7 +53,7 @@ class OpenId
      *     <a href="<?=$esia->getUrl()?>">Login</a>
      * ```
      *
-     * @return null|string
+     * @return string
      */
     public function getUrl()
     {
@@ -118,7 +118,7 @@ class OpenId
      * Method collect a token with given code
      *
      * @param $code
-     * @return null
+     * @return string
      */
     public function getToken($code)
     {
@@ -176,8 +176,8 @@ class OpenId
      * Algorithm for singing message which
      * will be send in client_secret param
      *
-     * @param $message
-     * @return bool|mixed
+     * @param string $message
+     * @return bool|string
      */
     public function signPKCS7($message)
     {
@@ -229,6 +229,7 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
+     * @return null|\stdClass
      */
     public function getPersonInfo()
     {
@@ -246,6 +247,7 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
+     * @return null|\stdClass
      */
     public function getContactInfo()
     {
@@ -276,6 +278,7 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
+     * @return null|\stdClass
      */
     public function getAddressInfo()
     {
@@ -319,7 +322,6 @@ class OpenId
                 array_push($result, $source);
             }
 
-
         }
 
         return $result;
@@ -340,7 +342,7 @@ class OpenId
     }
 
     /**
-     * @return bool|string
+     * @return string
      */
     private function getTimeStamp()
     {
@@ -368,7 +370,7 @@ class OpenId
     /**
      * Url safe for base64
      *
-     * @param $string
+     * @param string $string
      * @return string
      */
     private function urlSafe($string)
@@ -380,7 +382,7 @@ class OpenId
     /**
      * Url safe for base64
      *
-     * @param $string
+     * @param string $string
      * @return string
      */
     private function base64urlSafeDecode($string)
@@ -393,7 +395,7 @@ class OpenId
     /**
      * Write log
      *
-     * @param $message
+     * @param string $message
      */
     private function writeLog($message)
     {

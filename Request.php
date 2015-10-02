@@ -12,20 +12,20 @@ class Request
     /**
      * Url for calling request
      *
-     * @var
+     * @var string
      */
     public $url;
 
     /**
      * Token for "Authorization" header
      *
-     * @var
+     * @var string
      */
     public $token;
 
     /**
-     * @param $url
-     * @param $token
+     * @param string $url
+     * @param string $token
      */
     function __construct($url, $token)
     {
@@ -51,12 +51,15 @@ class Request
      *
      * @param string $method url
      * @param bool $withScheme if we need request with scheme
-     * @return mixed
+     * @return null|\stdClass
      */
     public function call($method, $withScheme = false)
     {
 
         $ch = $this->prepareAuthCurl();
+        if(is_resource($ch)) {
+            return null;
+        }
 
         $url = $withScheme ? $method : $this->url . $method;
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -66,17 +69,21 @@ class Request
 
     /**
      * Prepare curl resource with "Authorization" header
-     *
-     * @return resource
+     * @return resource|null
      */
     protected function prepareAuthCurl()
     {
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token]);
+        if (is_resource($ch)) {
 
-        return $ch;
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token]);
+
+            return $ch;
+        }
+
+        return null;
     }
 
 
