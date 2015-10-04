@@ -57,7 +57,7 @@ class Request
     {
 
         $ch = $this->prepareAuthCurl();
-        if(is_resource($ch)) {
+        if(!is_resource($ch)) {
             return null;
         }
 
