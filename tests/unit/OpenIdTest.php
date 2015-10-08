@@ -11,18 +11,20 @@ use esia\Request;
 
 class OpenIdTest extends \Codeception\TestCase\Test
 {
-    public $config = [
-        'clientId' => 'INSP03211',
-        'redirectUrl' => 'http://my-site.com/response.php',
-        'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
-        'privateKeyPath' => __DIR__ . '/../_data/server.key',
-        'privateKeyPassword' => 'test',
-        'certPath' => __DIR__ . '/../_data/server.crt',
-        'tmpPath' => __DIR__ . '/../tmp',
-    ];
+    public $config;
 
     public function __construct($name = null, array $data = array(), $dataName = '')
     {
+        $this->config = [
+            'clientId' => 'INSP03211',
+            'redirectUrl' => 'http://my-site.com/response.php',
+            'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
+            'privateKeyPath' => __DIR__ . '/../_data/server.key',
+            'privateKeyPassword' => 'test',
+            'certPath' => __DIR__ . '/../_data/server.crt',
+            'tmpPath' => __DIR__ . '/../tmp',
+        ];
+
         // define function for push them from global namespace
         test::func('esia', 'curl_init', false);
         test::func('esia', 'curl_exec', false);
@@ -128,7 +130,7 @@ class OpenIdTest extends \Codeception\TestCase\Test
     public function testCorrectUrl()
     {
         $call = function ($url) {
-            $this->assertNotFalse(filter_var( 'htpp://google.com/' . $url, FILTER_VALIDATE_URL));
+            $this->assertNotFalse(filter_var('htpp://google.com/' . $url, FILTER_VALIDATE_URL));
         };
         $request = Stub::make(Request::class, [
             'call' => $call,
@@ -169,7 +171,6 @@ class OpenIdTest extends \Codeception\TestCase\Test
 
         $result = $openId->getContactInfo();
         $this->assertCount(3, $result, 'Must return 3 element');
-
 
 
     }
