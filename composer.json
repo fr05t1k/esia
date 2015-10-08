@@ -6,5 +6,10 @@
         "psr-4": {
             "esia\\": "src/"
         }
+    },
+    "require-dev": {
+        "codeception/codeception": "2.1.3",
+        "codeception/aspect-mock": "0.5.3"
     }
+
 }

@@ -1,6 +1,9 @@
 <?php
 namespace esia;
 
+use esia\exceptions\RequestFailException;
+use esia\exceptions\SignFailException;
+
 /**
  * Class OpenId
  * @package esia
@@ -34,7 +37,7 @@ class OpenId
     protected $tmpPath;
 
     private $url = null;
-    private $token = null;
+    public $token = null;
 
     public function __construct(array $config = [])
     {
@@ -53,7 +56,7 @@ class OpenId
      *     <a href="<?=$esia->getUrl()?>">Login</a>
      * ```
      *
-     * @return string
+     * @return string|false
      */
     public function getUrl()
     {
@@ -61,6 +64,10 @@ class OpenId
         $this->state = $this->getState();
         $this->clientSecret = $this->scope . $this->timestamp . $this->clientId . $this->state;
         $this->clientSecret = $this->signPKCS7($this->clientSecret);
+
+        if ($this->clientSecret === false) {
+            return false;
+        }
 
         $url = $this->getCodeUrl() . '?%s';
 
@@ -118,7 +125,8 @@ class OpenId
      * Method collect a token with given code
      *
      * @param $code
-     * @return string
+     * @return false|string
+     * @throws SignFailException
      */
     public function getToken($code)
     {
@@ -126,6 +134,10 @@ class OpenId
         $this->state = $this->getState();
 
         $clientSecret = $this->signPKCS7($this->scope . $this->timestamp . $this->clientId . $this->state);
+
+        if ($clientSecret === false) {
+            throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
+        }
 
         $request = [
             'client_id' => $this->clientId,
@@ -143,6 +155,10 @@ class OpenId
 
         $c = curl_init();
 
+        if ($c === false) {
+            return false;
+        }
+
         $curlOpt = [
             CURLOPT_URL => $this->getTokenUrl(),
             CURLOPT_POSTFIELDS => http_build_query($request),
@@ -154,7 +170,8 @@ class OpenId
         curl_setopt_array($c, $curlOpt);
 
 
-        $result = json_decode(curl_exec($c));
+        $result = curl_exec($c);
+        $result = json_decode($result);
 
         $this->writeLog(print_r($result, true));
 
@@ -177,7 +194,8 @@ class OpenId
      * will be send in client_secret param
      *
      * @param string $message
-     * @return bool|string
+     * @return string
+     * @throws SignFailException
      */
     public function signPKCS7($message)
     {
@@ -185,11 +203,22 @@ class OpenId
         $keyContent = file_get_contents($this->privateKeyPath);
 
         $cert = openssl_x509_read($certContent);
+
+        if ($cert === false) {
+            throw new SignFailException(SignFailException::CODE_CANT_READ_CERT);
+        }
+
         $this->writeLog('Cert: ' . print_r($cert, true));
 
         $privateKey = openssl_pkey_get_private($keyContent, $this->privateKeyPassword);
+
+        if ($privateKey === false) {
+            throw new SignFailException(SignFailException::CODE_CANT_READ_PRIVATE_KEY);
+        }
+
         $this->writeLog('Private key: : ' . print_r($privateKey, true));
 
+        // random unique directories for sign
         $messageFile = $this->tmpPath . DIRECTORY_SEPARATOR . uniqid();
         $signFile = $this->tmpPath . DIRECTORY_SEPARATOR . uniqid();
         file_put_contents($messageFile, $message);
@@ -204,7 +233,7 @@ class OpenId
             $this->writeLog('Sign success');
         } else {
             $this->writeLog('Sign fail');
-            return false;
+            throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
         }
 
         $signed = file_get_contents($signFile);
@@ -329,12 +358,12 @@ class OpenId
 
     /**
      * @return Request
-     * @throws \Exception
+     * @throws RequestFailException
      */
     public function buildRequest()
     {
         if (!$this->token) {
-            throw new \Exception('Access token is empty');
+            throw new RequestFailException(RequestFailException::CODE_TOKEN_IS_EMPTY);
         }
 
         return new Request($this->portalUrl, $this->token);
