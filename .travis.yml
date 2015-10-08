@@ -3,12 +3,12 @@ php:
   - 5.5
   - 5.6
 
-
-scripts:
-  - php vendor/codeception/codeception/codecept run
-
 install:
   - travis_retry composer self-update
   - travis_retry composer --version
   - travis_retry composer install --prefer-dist --no-interaction
+
+script:
+  - php vendor/codeception/codeception/codecept run
+
 
