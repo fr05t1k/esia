@@ -48,7 +48,6 @@ class RequestTest extends \Codeception\TestCase\Test
         return new Request($this->url, $this->token);
     }
 
-
     protected function _before()
     {
     }

@@ -287,12 +287,9 @@ class OpenId
 
         $result = $request->call($url);
 
-        if ($result) {
-
-            if ($result->size > 0) {
-                $contacts = $this->collectArrayElements($result->elements);
-                return $contacts;
-            }
+        if ($result && $result->size > 0) {
+            $contacts = $this->collectArrayElements($result->elements);
+            return $contacts;
         }
 
         return $result;
@@ -318,15 +315,12 @@ class OpenId
 
         $result = $request->call($url);
 
-        if ($result) {
-
-            if ($result->size > 0) {
-                $addresses = $this->collectArrayElements($result->elements);
-                return $addresses;
-            }
+        if ($result && $result->size > 0) {
+            $addresses = $this->collectArrayElements($result->elements);
+            return $addresses;
         }
 
-        return $result;
+        return null;
 
     }
 

@@ -1,7 +1,9 @@
 <?php
 namespace tests\unit;
 
+use AspectMock\Proxy\InstanceProxy;
 use AspectMock\Test as test;
+use Codeception\Util\Stub;
 use esia\exceptions\RequestFailException;
 use esia\exceptions\SignFailException;
 use esia\OpenId;
@@ -113,25 +115,99 @@ class OpenIdTest extends \Codeception\TestCase\Test
     {
         try {
             $this->openId->buildRequest();
-        } catch(RequestFailException $e) {
+        } catch (RequestFailException $e) {
             $expectedCode = RequestFailException::CODE_TOKEN_IS_EMPTY;
             $message = 'Exception rise with wrong code';
             $this->assertEquals($e->getCode(), $expectedCode, $message);
         }
-        
+
         $this->openId->token = '123';
         $this->assertInstanceOf(Request::class, $this->openId->buildRequest());
     }
 
-    public function testGetPersonInfo()
+    public function testCorrectUrl()
     {
+        $call = function ($url) {
+            $this->assertNotFalse(filter_var( 'htpp://google.com/' . $url, FILTER_VALIDATE_URL));
+        };
+        $request = Stub::make(Request::class, [
+            'call' => $call,
+        ]);
+
+        /** @var OpenId $openId */
+        $openId = test::double($this->openId, [
+            'buildRequest' => $request,
+        ]);
+
+        $openId->token = '123';
+
+        $openId->getPersonInfo();
+        $openId->getContactInfo();
+        $openId->getAddressInfo();
+    }
+
+    public function testGetInfoWithNotEmptyElements()
+    {
+        $request = Stub::make(Request::class, [
+            'call' => function () {
+                $elements = new \stdClass();
+                $elements->size = 3;
+                $elements->elements = [1, 2, 3];
+                return $elements;
+            }
+        ]);
+
+        /** @var OpenId|InstanceProxy $openId */
+        $openId = test::double($this->openId, [
+            'buildRequest' => $request,
+        ]);
+
+        $openId->token = 'test';
+        $result = $openId->getAddressInfo();
+        $openId->verifyInvokedOnce('collectArrayElements');
+        $this->assertCount(3, $result, 'Must return 3 element');
+
+        $result = $openId->getContactInfo();
+        $this->assertCount(3, $result, 'Must return 3 element');
+
+
 
     }
+
+    public function testGetInfoWithEmptyElements()
+    {
+        $returnElements = function () {
+            $elements = new \stdClass();
+            $elements->size = 0;
+            $elements->elements = [];
+            return $elements;
+        };
+
+        /** @var OpenId|InstanceProxy $openId */
+        $openId = test::double($this->openId, [
+            'call' => $returnElements,
+            'collectArrayElements' => false
+        ]);
+
+        $openId->token = 'test';
+        $openId->getAddressInfo();
+        $openId->verifyInvokedMultipleTimes('collectArrayElements', 0);
+
+        $openId->getContactInfo();
+        $openId->verifyInvokedMultipleTimes('collectArrayElements', 0);
+    }
+
 
     protected function _before()
     {
         $this->openId = $this->prepareOpenId();
         parent::_before();
+    }
+
+    protected function _after()
+    {
+        test::clean();
+        parent::_after();
     }
 
 
