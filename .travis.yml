@@ -7,8 +7,9 @@ php:
   - nightly
 
 
-script:
-  - vendor/bin/phpunit --verbose $PHPUNIT_FLAGS
+test:
+  override:
+    - php vendor/codeception/codeception/codecept run
 
 install:
   - travis_retry composer self-update && composer --version
