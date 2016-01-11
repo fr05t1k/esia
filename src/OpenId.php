@@ -10,7 +10,6 @@ use esia\exceptions\SignFailException;
  */
 class OpenId
 {
-
     public $clientId;
     public $redirectUrl;
 
@@ -47,7 +46,6 @@ class OpenId
             }
         }
     }
-
 
     /**
      * Return an url for authentication
@@ -86,7 +84,6 @@ class OpenId
 
         $this->url = sprintf($url, $request);
 
-
         return $this->url;
     }
 
@@ -120,7 +117,6 @@ class OpenId
         return $this->portalUrl . $this->personUrl;
     }
 
-
     /**
      * Method collect a token with given code
      *
@@ -152,25 +148,22 @@ class OpenId
             'refresh_token' => $this->state,
         ];
 
+        $curl = curl_init();
 
-        $c = curl_init();
-
-        if ($c === false) {
+        if ($curl === false) {
             return false;
         }
 
-        $curlOpt = [
+        $options = [
             CURLOPT_URL => $this->getTokenUrl(),
             CURLOPT_POSTFIELDS => http_build_query($request),
             CURLOPT_POST => true,
             CURLOPT_RETURNTRANSFER => true,
         ];
 
+        curl_setopt_array($curl, $options);
 
-        curl_setopt_array($c, $curlOpt);
-
-
-        $result = curl_exec($c);
+        $result = curl_exec($curl);
         $result = json_decode($result);
 
         $this->writeLog(print_r($result, true));
@@ -179,13 +172,12 @@ class OpenId
 
         # get object id from token
         $chunks = explode('.', $this->token);
-        $payload = json_decode($this->base64urlSafeDecode($chunks[1]));
+        $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
         $this->oid = $payload->{'urn:esia:sbj_id'};
 
         $this->writeLog(var_export($payload, true));
 
         return $this->token;
-
     }
 
 
@@ -199,6 +191,8 @@ class OpenId
      */
     public function signPKCS7($message)
     {
+        $this->checkFilesExists();
+
         $certContent = file_get_contents($this->certPath);
         $keyContent = file_get_contents($this->privateKeyPath);
 
@@ -227,12 +221,15 @@ class OpenId
             $messageFile,
             $signFile,
             $cert,
-            $privateKey, []);
+            $privateKey,
+            []
+        );
 
         if ($signResult) {
             $this->writeLog('Sign success');
         } else {
             $this->writeLog('Sign fail');
+            $this->writeLog('SSH error: ' . openssl_error_string());
             throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
         }
 
@@ -266,7 +263,6 @@ class OpenId
 
         $request = $this->buildRequest();
         return $request->call($url);
-
     }
 
     /**
@@ -280,20 +276,15 @@ class OpenId
      */
     public function getContactInfo()
     {
-
         $url = $this->personUrl . '/' . $this->oid . '/ctts';
-
         $request = $this->buildRequest();
-
         $result = $request->call($url);
 
         if ($result && $result->size > 0) {
-            $contacts = $this->collectArrayElements($result->elements);
-            return $contacts;
+            return $this->collectArrayElements($result->elements);
         }
 
         return $result;
-
     }
 
 
@@ -308,20 +299,15 @@ class OpenId
      */
     public function getAddressInfo()
     {
-
         $url = $this->personUrl . '/' . $this->oid . '/addrs';
-
         $request = $this->buildRequest();
-
         $result = $request->call($url);
 
         if ($result && $result->size > 0) {
-            $addresses = $this->collectArrayElements($result->elements);
-            return $addresses;
+            return $this->collectArrayElements($result->elements);
         }
 
         return null;
-
     }
 
     /**
@@ -361,7 +347,22 @@ class OpenId
         }
 
         return new Request($this->portalUrl, $this->token);
+    }
 
+    /**
+     * @throws SignFailException
+     */
+    protected function checkFilesExists()
+    {
+        if (! file_exists($this->certPath)) {
+            throw new SignFailException(SignFailException::CODE_NO_SUCH_CERT_FILE);
+        }
+        if (! file_exists($this->privateKeyPath)) {
+            throw new SignFailException(SignFailException::CODE_NO_SUCH_KEY_FILE);
+        }
+        if (! file_exists($this->tmpPath)) {
+            throw new SignFailException(SignFailException::CODE_NO_TEMP_DIRECTORY);
+        }
     }
 
     /**
@@ -380,7 +381,6 @@ class OpenId
      */
     private function getState()
     {
-
         return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
@@ -408,7 +408,7 @@ class OpenId
      * @param string $string
      * @return string
      */
-    private function base64urlSafeDecode($string)
+    private function base64UrlSafeDecode($string)
     {
         $base64 = strtr($string, '-_', '+/');
 
