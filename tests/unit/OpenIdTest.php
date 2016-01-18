@@ -230,7 +230,6 @@ class OpenIdTest extends \Codeception\TestCase\Test
 
     public function testGetUrl()
     {
-
         $url = $this->openId->getUrl();
         $this->assertNotFalse(filter_var($url, FILTER_VALIDATE_URL));
 
