@@ -36,7 +36,7 @@ $config = [
 $esia = new \esia\OpenId($config);
 ?>
 
-<a href="<?=$esia->getUrl()?>Войти через портал госуслуги</a>"
+<a href="<?=$esia->getUrl()?>">Войти через портал госуслуги</a>
 ```
 
 После редиректа на ваш `redirectUrl` вы получите в `$_GET['code']` код для получения токена
