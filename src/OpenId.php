@@ -70,6 +70,7 @@ class OpenId
         $url = $this->getCodeUrl() . '?%s';
 
         $params = [
+            'timestamp' => $this->timestamp,
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'redirect_uri' => $this->redirectUrl,
@@ -77,7 +78,6 @@ class OpenId
             'response_type' => $this->responseType,
             'state' => $this->state,
             'access_type' => $this->accessType,
-            'timestamp' => $this->timestamp,
         ];
 
         $request = http_build_query($params);
@@ -136,6 +136,7 @@ class OpenId
         }
 
         $request = [
+            'timestamp' => $this->timestamp,
             'client_id' => $this->clientId,
             'code' => $code,
             'grant_type' => 'authorization_code',
@@ -143,7 +144,6 @@ class OpenId
             'state' => $this->state,
             'redirect_uri' => $this->redirectUrl,
             'scope' => $this->scope,
-            'timestamp' => $this->timestamp,
             'token_type' => 'Bearer',
             'refresh_token' => $this->state,
         ];
