@@ -213,8 +213,8 @@ class OpenId
         $this->writeLog('Private key: : ' . print_r($privateKey, true));
 
         // random unique directories for sign
-        $messageFile = $this->tmpPath . DIRECTORY_SEPARATOR . uniqid();
-        $signFile = $this->tmpPath . DIRECTORY_SEPARATOR . uniqid();
+        $messageFile = $this->tmpPath . DIRECTORY_SEPARATOR . $this->getRandomString();
+        $signFile = $this->tmpPath . DIRECTORY_SEPARATOR . $this->getRandomString();
         file_put_contents($messageFile, $message);
 
         $signResult = openssl_pkcs7_sign(
@@ -427,6 +427,16 @@ class OpenId
         if (is_callable($log)) {
             $log($message);
         }
+    }
+    
+    /**
+     * Generate random unique string
+     *
+     * @return string
+     */
+    private function getRandomString()
+    {
+        return md5(uniqid(mt_rand(), true));
     }
 }
 
