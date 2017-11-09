@@ -1,16 +1,26 @@
 <?php
+
 namespace esia;
 
 use esia\exceptions\RequestFailException;
 use esia\exceptions\SignFailException;
+use esia\transport\EsiaTransportInterface;
 
 /**
  * Class OpenId
+ *
  * @package esia
  */
 class OpenId
 {
+    /**
+     * @var string
+     */
     public $clientId;
+
+    /**
+     * @var string
+     */
     public $redirectUrl;
 
     /**
@@ -21,12 +31,19 @@ class OpenId
     public $tokenUrl = 'aas/oauth2/te';
     public $codeUrl = 'aas/oauth2/ac';
     public $personUrl = 'rs/prns';
+    public $organizationUrl = 'rs/orgs';
     public $privateKeyPath;
     public $privateKeyPassword;
     public $certPath;
     public $oid = null;
 
-    protected $scope = 'http://esia.gosuslugi.ru/usr_inf';
+    /**
+     * @var EsiaTransportInterface
+     */
+    protected $transport;
+
+    protected $personScope = 'http://esia.gosuslugi.ru/usr_inf';
+    protected $organizationScope = 'http://esia.gosuslugi.ru/org_inf';
 
     protected $clientSecret = null;
     protected $responseType = 'code';
@@ -35,16 +52,35 @@ class OpenId
     protected $accessType = 'offline';
     protected $tmpPath;
 
+    /**
+     * @var string
+     */
     private $url = null;
+
+    /**
+     * @var string
+     */
     public $token = null;
 
-    public function __construct(array $config = [])
+    /**
+     * @var array
+     */
+    public $fullTokenData = [];
+
+    /**
+     * OpenId constructor.
+     *
+     * @param array $config
+     * @param EsiaTransportInterface $transport
+     */
+    public function __construct(array $config = [], EsiaTransportInterface $transport)
     {
         foreach ($config as $k => $v) {
             if (property_exists($this, $k)) {
                 $this->$k = $v;
             }
         }
+        $this->transport = $transport;
     }
 
     /**
@@ -60,7 +96,7 @@ class OpenId
     {
         $this->timestamp = $this->getTimeStamp();
         $this->state = $this->getState();
-        $this->clientSecret = $this->scope . $this->timestamp . $this->clientId . $this->state;
+        $this->clientSecret = $this->personScope . $this->timestamp . $this->clientId . $this->state;
         $this->clientSecret = $this->signPKCS7($this->clientSecret);
 
         if ($this->clientSecret === false) {
@@ -73,7 +109,7 @@ class OpenId
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'redirect_uri' => $this->redirectUrl,
-            'scope' => $this->scope,
+            'scope' => $this->personScope,
             'response_type' => $this->responseType,
             'state' => $this->state,
             'access_type' => $this->accessType,
@@ -85,6 +121,22 @@ class OpenId
         $this->url = sprintf($url, $request);
 
         return $this->url;
+    }
+
+    /**
+     * @param $url
+     */
+    public function setRedirectUrl($url)
+    {
+        $this->redirectUrl = $url;
+    }
+
+    /**
+     * @return bool|string
+     */
+    public function getGeneratedState()
+    {
+        return $this->state ? $this->state : false;
     }
 
     /**
@@ -118,9 +170,20 @@ class OpenId
     }
 
     /**
+     * Return an url for request person information
+     *
+     * @return string
+     */
+    public function getOrganisationUrl()
+    {
+        return $this->portalUrl . $this->organizationUrl;
+    }
+
+    /**
      * Method collect a token with given code
      *
      * @param $code
+     *
      * @return false|string
      * @throws SignFailException
      */
@@ -129,7 +192,7 @@ class OpenId
         $this->timestamp = $this->getTimeStamp();
         $this->state = $this->getState();
 
-        $clientSecret = $this->signPKCS7($this->scope . $this->timestamp . $this->clientId . $this->state);
+        $clientSecret = $this->signPKCS7($this->personScope . $this->timestamp . $this->clientId . $this->state);
 
         if ($clientSecret === false) {
             throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
@@ -142,50 +205,204 @@ class OpenId
             'client_secret' => $clientSecret,
             'state' => $this->state,
             'redirect_uri' => $this->redirectUrl,
-            'scope' => $this->scope,
+            'scope' => $this->personScope,
             'timestamp' => $this->timestamp,
             'token_type' => 'Bearer',
             'refresh_token' => $this->state,
         ];
 
-        $curl = curl_init();
+        $resultTxt = $this->transport->post($this->getTokenUrl(), $request);
 
-        if ($curl === false) {
-            return false;
+        $result = json_decode($resultTxt);
+        if ($result) {
+            $this->writeLog(print_r($result, true));
+
+            $this->token = $result->access_token;
+
+            # get object id from token
+            $chunks = explode('.', $this->token);
+            $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
+            $this->oid = $payload->{'urn:esia:sbj_id'};
+
+            $this->fullTokenData = (array)$result;
+            $this->fullTokenData['expires'] = time() + $this->fullTokenData['expires_in'] - 1;
+            $this->fullTokenData['oid'] = $this->oid;
+
+            $this->writeLog(var_export($payload, true));
+
+            return $this->token;
+        } else {
+            $this->writeLog('URL: ' . print_r($this->getTokenUrl(), true));
+            $this->writeLog('POST: ' . print_r($request, true));
+            $this->writeLog(print_r($resultTxt, true));
         }
 
-        $options = [
-            CURLOPT_URL => $this->getTokenUrl(),
-            CURLOPT_POSTFIELDS => http_build_query($request),
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-        ];
-
-        curl_setopt_array($curl, $options);
-
-        $result = curl_exec($curl);
-        $result = json_decode($result);
-
-        $this->writeLog(print_r($result, true));
-
-        $this->token = $result->access_token;
-
-        # get object id from token
-        $chunks = explode('.', $this->token);
-        $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
-        $this->oid = $payload->{'urn:esia:sbj_id'};
-
-        $this->writeLog(var_export($payload, true));
-
-        return $this->token;
+        return false;
     }
 
+    /**
+     * token data must be set after getting token
+     *
+     * @return array
+     */
+    public function getFullTokenData()
+    {
+        return $this->fullTokenData;
+    }
+
+    /**
+     * Method collect a token with given code
+     *
+     * @param $orgOid
+     *
+     * @return false|string
+     * @throws SignFailException
+     */
+    public function getOrgToken($orgOid)
+    {
+        $this->timestamp = $this->getTimeStamp();
+        $this->state = $this->getState();
+
+        $scope = $this->organizationScope . '?org_oid=' . $orgOid;
+
+        $clientSecret = $this->signPKCS7($scope . $this->timestamp . $this->clientId . $this->state);
+
+        if ($clientSecret === false) {
+            throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
+        }
+
+        $request = [
+            'client_id' => $this->clientId,
+            'response_type' => 'token',
+            'grant_type' => 'client_credentials',
+            'scope' => $scope,
+            'state' => $this->state,
+            'timestamp' => $this->timestamp,
+            'token_type' => 'Bearer',
+            'client_secret' => $clientSecret,
+        ];
+
+        $result = $this->transport->post($this->getCodeUrl(), $request);
+        $this->writeLog(print_r($request, true));
+
+        $result = json_decode($result);
+        if ($result) {
+            $this->writeLog(print_r($result, true));
+
+            $this->token = $result->access_token;
+
+            # get object id from token
+            $chunks = explode('.', $this->token);
+            $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
+            $this->oid = $payload->{'urn:esia:sbj_id'};
+
+            $this->writeLog(var_export($payload, true));
+
+            return $this->token;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $refresh_token
+     *
+     * @return bool|null
+     * @throws SignFailException
+     */
+    public function refreshToken($refresh_token)
+    {
+        $this->timestamp = $this->getTimeStamp();
+        $this->state = $this->getState();
+
+        $clientSecret = $this->signPKCS7($this->personScope . $this->timestamp . $this->clientId . $this->state);
+
+        if ($clientSecret === false) {
+            throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
+        }
+
+        $request = [
+            'client_id' => $this->clientId,
+            'grant_type' => 'refresh_token',
+            'client_secret' => $clientSecret,
+            'state' => $this->state,
+            'redirect_uri' => $this->redirectUrl,
+            'scope' => $this->personScope,
+            'timestamp' => $this->timestamp,
+            'token_type' => 'Bearer',
+            'refresh_token' => $refresh_token,
+        ];
+
+        $resultTxt = $this->transport->post($this->getTokenUrl(), $request);
+
+        // TODO: ensure that response is json encoded string
+        $result = json_decode($resultTxt);
+        if ($result) {
+            $this->writeLog(print_r($result, true));
+
+            $this->token = $result->access_token;
+
+            # get object id from token
+            $chunks = explode('.', $this->token);
+            $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
+            $this->oid = $payload->{'urn:esia:sbj_id'};
+
+            $this->fullTokenData = (array)$result;
+            $this->fullTokenData['expires'] = time() + $this->fullTokenData['expires_in'] - 1;
+            $this->fullTokenData['oid'] = $this->oid;
+
+            $this->writeLog(var_export($payload, true));
+
+            return $this->token;
+        } else {
+            $this->writeLog('URL: ' . print_r($this->getTokenUrl(), true));
+            $this->writeLog('POST: ' . print_r($request, true));
+            $this->writeLog(print_r($resultTxt, true));
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $scope
+     */
+    public function setScope($scope)
+    {
+        $this->personScope = $scope;
+    }
+
+    /**
+     * @param $token
+     */
+    public function setToken($token)
+    {
+        $this->token = $token;
+    }
+
+    /**
+     * @param $oid
+     *
+     * @return mixed
+     */
+    public function setOid($oid)
+    {
+        return $this->oid = $oid;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getOid()
+    {
+        return $this->oid;
+    }
 
     /**
      * Algorithm for singing message which
      * will be send in client_secret param
      *
      * @param string $message
+     *
      * @return string
      * @throws SignFailException
      */
@@ -262,6 +479,7 @@ class OpenId
         $url = $this->personUrl . '/' . $this->oid;
 
         $request = $this->buildRequest();
+
         return $request->call($url);
     }
 
@@ -272,7 +490,7 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|\stdClass
+     * @return null|\stdClass|array
      */
     public function getContactInfo()
     {
@@ -280,7 +498,7 @@ class OpenId
         $request = $this->buildRequest();
         $result = $request->call($url);
 
-        if ($result && $result->size > 0) {
+        if ($result && is_object($result) && $result->size > 0) {
             return $this->collectArrayElements($result->elements);
         }
 
@@ -295,7 +513,7 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|\stdClass
+     * @return null|\stdClass|array
      */
     public function getAddressInfo()
     {
@@ -303,7 +521,118 @@ class OpenId
         $request = $this->buildRequest();
         $result = $request->call($url);
 
-        if ($result && $result->size > 0) {
+        if ($result && is_object($result) && $result->size > 0) {
+            return $this->collectArrayElements($result->elements);
+        }
+
+        return null;
+    }
+
+    /**
+     * @return null|\stdClass[]
+     */
+    public function getOrgRoles()
+    {
+        $url = $this->personUrl . '/' . $this->oid . '/roles';
+
+        $request = $this->buildRequest();
+        $result = $request->call($url);
+        $this->writeLog(print_r($result, true));
+
+        if ($result && is_object($result) && $result->size > 0) {
+            return $result->elements;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $orgId
+     *
+     * @return \stdClass
+     */
+    public function getOrgInfo($orgId)
+    {
+        $url = $this->organizationUrl . '/' . $orgId;
+
+        $request = $this->buildRequest();
+        $result = $request->call($url);
+        $this->writeLog(print_r($result, true));
+
+        if ($result && is_object($result) && $result->oid > 0) {
+            return $result;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $orgOid
+     *
+     * @return array|null
+     */
+    public function getOrgEmployers($orgOid)
+    {
+
+        $url = $this->organizationUrl . '/' . $orgOid . '/emps';
+
+        $request = $this->buildRequest();
+        $result = $request->call($url);
+        $this->writeLog(print_r($result, true));
+
+        if ($result && is_object($result) &&
+            property_exists($result, 'elements') &&
+            count($result->elements) > 0
+        ) {
+            return $this->collectArrayElements($result->elements);
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch organizations from current person
+     *
+     * You must collect token person before
+     * calling this method
+     *
+     * @param string $orgOid
+     *
+     * @throws \Exception
+     * @return null|array
+     */
+    public function getOrgAddress($orgOid)
+    {
+
+        $url = $this->organizationUrl . '/' . $orgOid . '/addrs';
+
+        $request = $this->buildRequest();
+        $result = $request->call($url);
+        $this->writeLog(print_r($result, true));
+
+        if ($result && is_object($result) && $result->size > 0) {
+            return $this->collectArrayElements($result->elements);
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch organization contacts
+     *
+     * @param $orgOid
+     *
+     * @return array|null|\stdClass
+     */
+    public function getOrgContacts($orgOid)
+    {
+        $url = $this->organizationUrl . '/' . $orgOid . '/ctts';
+        $request = $this->buildRequest();
+        $result = $request->call($url);
+
+        if ($result && is_object($result) &&
+            property_exists($result, 'elements') &&
+            count($result->elements) > 0) {
             return $this->collectArrayElements($result->elements);
         }
 
@@ -316,6 +645,7 @@ class OpenId
      *
      *
      * @param $elements array of urls
+     *
      * @return array
      * @throws \Exception
      */
@@ -330,6 +660,7 @@ class OpenId
             if ($source) {
                 array_push($result, $source);
             }
+            $this->writeLog(print_r($result, true));
 
         }
 
@@ -346,7 +677,7 @@ class OpenId
             throw new RequestFailException(RequestFailException::CODE_TOKEN_IS_EMPTY);
         }
 
-        return new Request($this->portalUrl, $this->token);
+        return new Request($this->portalUrl, $this->token, $this->transport);
     }
 
     /**
@@ -354,13 +685,13 @@ class OpenId
      */
     protected function checkFilesExists()
     {
-        if (! file_exists($this->certPath)) {
+        if (!file_exists($this->certPath)) {
             throw new SignFailException(SignFailException::CODE_NO_SUCH_CERT_FILE);
         }
-        if (! file_exists($this->privateKeyPath)) {
+        if (!file_exists($this->privateKeyPath)) {
             throw new SignFailException(SignFailException::CODE_NO_SUCH_KEY_FILE);
         }
-        if (! file_exists($this->tmpPath)) {
+        if (!file_exists($this->tmpPath)) {
             throw new SignFailException(SignFailException::CODE_NO_TEMP_DIRECTORY);
         }
     }
@@ -394,6 +725,7 @@ class OpenId
      * Url safe for base64
      *
      * @param string $string
+     *
      * @return string
      */
     private function urlSafe($string)
@@ -406,6 +738,7 @@ class OpenId
      * Url safe for base64
      *
      * @param string $string
+     *
      * @return string
      */
     private function base64UrlSafeDecode($string)
@@ -420,7 +753,7 @@ class OpenId
      *
      * @param string $message
      */
-    private function writeLog($message)
+    public function writeLog($message)
     {
         $log = $this->log;
 
@@ -428,7 +761,7 @@ class OpenId
             $log($message);
         }
     }
-    
+
     /**
      * Generate random unique string
      *

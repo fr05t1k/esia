@@ -21,7 +21,7 @@ composer require --prefer-dist fr05t1k/esia
 # Как использовать 
 
 Пример получения ссылки для авторизации
-```
+```php
 <?php 
 $config = [
    'clientId' => 'INSP03211',
@@ -33,7 +33,7 @@ $config = [
    'tmpPath' => 'tmp',
 ];
 
-$esia = new \esia\OpenId($config);
+$esia = new \esia\OpenId($config, new esia\transport\Curl());
 ?>
 
 <a href="<?=$esia->getUrl()?>">Войти через портал госуслуги</a>
@@ -43,9 +43,9 @@ $esia = new \esia\OpenId($config);
 
 Пример получения токена и информации о пользователе
 
-```
-
-$esia = new \esia\OpenId($config);
+```php
+<?php
+$esia = new \esia\OpenId($config, new esia\transport\Curl());
 
 $esia->getToken($_GET['code']);
 
@@ -54,6 +54,62 @@ $addressInfo = $esia->getAddressInfo();
 $contactInfo = $esia->getContactInfo();
 
 ```
+Пример получения данных об организации
+
+```php
+<?php
+$esia = new \esia\OpenId($config, new esia\transport\Curl());
+
+$esia->getToken($_GET['code']);
+
+/**
+ *  get user oid
+ */
+$personInfo = $esia->getPersonInfo();
+
+/** @var array $orgs = [
+ *  \stdClass => [
+ *      'oid' => '11155',
+ *      'ogrn'=>'112233',
+ *      'fullName'=> 'Some org',
+ *      ...
+ *  ]
+ * ] */
+
+$orgs = $esia->getOrgRoles();
+
+...
+
+// in next page we must chose one org
+
+$orgOid = $_GET['oorgOid'];
+
+$scopes = [
+    'http://esia.gosuslugi.ru/org_shortname?org_oid=#org_oid#',
+    'http://esia.gosuslugi.ru/org_inn?org_oid=#org_oid#',
+    'http://esia.gosuslugi.ru/org_addrs?org_oid=#org_oid#',
+    'http://esia.gosuslugi.ru/org_ctts?org_oid=#org_oid#',
+    'http://esia.gosuslugi.ru/org_emps?org_oid=#org_oid#',
+    ];
+
+$scopes = preg_replace("/#org_oid#/i", $orgOid, $scopes);
+
+$esia->setScope($scopes);
+$esia->setRedirectUrl('http://my-site.com/orgResponse.php?org_oid='. $orgOid);
+$url = $esia->getUrl();
+
+// after login
+
+$esia->getOrgToken($_GET['code']);
+
+// get token data & save it for next requests
+$tokenData = $esia->getFullTokenData();
+
+$orgInfo = $esia->getOrgInfo($orgOid);
+$orgContacts = $esia->getOrgContacts($orgOid);
+
+```
+
 # Конфиг
 
 `clientId` - ID вашего приложения.
