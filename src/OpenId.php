@@ -26,7 +26,7 @@ class OpenId
     public $certPath;
     public $oid = null;
 
-    protected $scope = 'http://esia.gosuslugi.ru/usr_inf';
+    protected $scope = 'fullname birthdate gender email mobile id_doc snils inn';
 
     protected $clientSecret = null;
     protected $responseType = 'code';
