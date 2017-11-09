@@ -311,6 +311,28 @@ class OpenId
     }
 
     /**
+     * Fetch documents info about current person
+     *
+     * You must collect token person before
+     * calling this method
+     *
+     * @throws \Exception
+     * @return null|\stdClass
+     */
+    public function getDocInfo()
+    {
+        $url = $this->personUrl . '/' . $this->oid . '/docs';
+        $request = $this->buildRequest();
+        $result = $request->call($url);
+
+        if ($result && $result->size > 0) {
+            return $this->collectArrayElements($result->elements);
+        }
+
+        return $result;
+    }
+
+    /**
      * This method can iterate on each element
      * and fetch entities from esia by url
      *
