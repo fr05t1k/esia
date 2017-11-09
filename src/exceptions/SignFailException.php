@@ -2,6 +2,11 @@
 
 namespace esia\exceptions;
 
+/**
+ * Class SignFailException
+ *
+ * @package esia\exceptions
+ */
 class SignFailException extends BaseException
 {
     const CODE_CANT_READ_CERT = 500;
@@ -11,6 +16,9 @@ class SignFailException extends BaseException
     const CODE_NO_SUCH_KEY_FILE = 505;
     const CODE_NO_TEMP_DIRECTORY = 506;
 
+    /**
+     * @var array
+     */
     protected static $codeLabels = [
         self::CODE_CANT_READ_CERT => 'Can\'t read a certificate',
         self::CODE_CANT_READ_PRIVATE_KEY => 'Can\'t read a private key',

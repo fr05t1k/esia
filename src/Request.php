@@ -2,6 +2,8 @@
 
 namespace esia;
 
+use esia\transport\EsiaTransportInterface;
+
 
 /**
  * Class Request
@@ -24,13 +26,21 @@ class Request
     public $token;
 
     /**
+     * @var EsiaTransportInterface
+     */
+    public $transport;
+
+    /**
+     * Request constructor.
      * @param string $url
      * @param string $token
+     * @param $transport
      */
-    function __construct($url, $token)
+    function __construct($url, $token, EsiaTransportInterface $transport)
     {
         $this->url = $url;
         $this->token = $token;
+        $this->transport = $transport;
     }
 
     /**
@@ -56,35 +66,16 @@ class Request
     public function call($method, $withScheme = false)
     {
 
-        $ch = $this->prepareAuthCurl();
-        if(!is_resource($ch)) {
-            return null;
-        }
-
         $url = $withScheme ? $method : $this->url . $method;
-        curl_setopt($ch, CURLOPT_URL, $url);
-
-        return json_decode(curl_exec($ch));
-    }
-
-    /**
-     * Prepare curl resource with "Authorization" header
-     * @return resource|null
-     */
-    protected function prepareAuthCurl()
-    {
-        $ch = curl_init();
-
-        if (is_resource($ch)) {
-
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token]);
-
-            return $ch;
+        $result = $this->transport->get($url, [], ['Authorization: Bearer ' . $this->token]);
+        if ($result) {
+            $return = json_decode($result);
+            if($return == null){
+                print $result;exit;
+            }
+            return $return;
         }
-
         return null;
     }
-
 
 }
