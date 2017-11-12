@@ -8,8 +8,8 @@
         }
     },
     "require-dev": {
-        "codeception/codeception": "2.1.3",
-        "codeception/aspect-mock": "0.5.3"
+        "codeception/codeception": "2.3.6",
+        "codeception/aspect-mock": "2.0.1"
     }
 
 }

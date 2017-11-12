@@ -69,7 +69,11 @@ class OpenIdTest extends \Codeception\TestCase\Test
         $oid = 123;
         $oidBase64 = $this->urlSafe(base64_encode('{ "urn:esia:sbj_id" : ' . $oid . '}'));
 
-        $curlResult = '{ "access_token" : "test.' . $oidBase64 . '.test", "expires_in" : 3600 }';
+        $curlResult = json_encode([
+            'access_token' => 'test.' . $oidBase64 . '.test',
+            'expires_in' => 3600,
+        ]);
+
         test::func('esia\transport', 'curl_exec', $curlResult);
         $token = $this->openId->getToken($curlResult);
         $this->assertNotFalse($token);
@@ -153,13 +157,12 @@ class OpenIdTest extends \Codeception\TestCase\Test
     public function testGetInfoWithNotEmptyElements()
     {
         $request = Stub::make(Request::class, [
-            'call' => function () {
-                $elements = new \stdClass();
-                $elements->size = 3;
-                $elements->elements = [1, 2, 3];
-
-                return $elements;
-            },
+            'call' => json_decode(
+                json_encode([
+                    'size' => 3,
+                    'elements' => [1, 2, 3],
+                ])
+            ),
         ]);
 
         /** @var OpenId|InstanceProxy $openId */
@@ -180,17 +183,18 @@ class OpenIdTest extends \Codeception\TestCase\Test
 
     public function testGetInfoWithEmptyElements()
     {
-        $returnElements = function () {
-            $elements = new \stdClass();
-            $elements->size = 0;
-            $elements->elements = [];
-
-            return $elements;
-        };
+        $request = Stub::make(Request::class, [
+            'call' => json_decode(
+                json_encode([
+                    'size' => 0,
+                    'elements' => [],
+                ])
+            ),
+        ]);
 
         /** @var OpenId|InstanceProxy $openId */
         $openId = test::double($this->openId, [
-            'call' => $returnElements,
+            'buildRequest' => $request,
             'collectArrayElements' => false,
         ]);
 
