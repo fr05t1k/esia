@@ -42,8 +42,17 @@ class OpenId
      */
     protected $transport;
 
-    protected $personScope = 'http://esia.gosuslugi.ru/usr_inf';
-    protected $organizationScope = 'http://esia.gosuslugi.ru/org_inf';
+    /**
+     * @var string
+     */
+    protected $personScope = 'fullname birthdate gender email mobile id_doc snils inn';
+
+    /**
+     * scope must be set manually with orgOid before request of token
+     *
+     * @var string
+     */
+    protected $organizationScope = '';
 
     protected $clientSecret = null;
     protected $responseType = 'code';
@@ -189,6 +198,7 @@ class OpenId
      */
     public function getToken($code)
     {
+
         $this->timestamp = $this->getTimeStamp();
         $this->state = $this->getState();
 
@@ -211,10 +221,11 @@ class OpenId
             'refresh_token' => $this->state,
         ];
 
-        $resultTxt = $this->transport->post($this->getTokenUrl(), $request);
+        $return = $this->transport->post($this->getTokenUrl(), $request);
 
-        $result = json_decode($resultTxt);
-        if ($result) {
+        $result = json_decode($return);
+
+        if ($result && is_object($result)) {
             $this->writeLog(print_r($result, true));
 
             $this->token = $result->access_token;
@@ -234,7 +245,7 @@ class OpenId
         } else {
             $this->writeLog('URL: ' . print_r($this->getTokenUrl(), true));
             $this->writeLog('POST: ' . print_r($request, true));
-            $this->writeLog(print_r($resultTxt, true));
+            $this->writeLog(print_r($result, true));
         }
 
         return false;
@@ -333,10 +344,8 @@ class OpenId
             'refresh_token' => $refresh_token,
         ];
 
-        $resultTxt = $this->transport->post($this->getTokenUrl(), $request);
+        $result = $this->transport->post($this->getTokenUrl(), $request);
 
-        // TODO: ensure that response is json encoded string
-        $result = json_decode($resultTxt);
         if ($result) {
             $this->writeLog(print_r($result, true));
 
@@ -357,7 +366,7 @@ class OpenId
         } else {
             $this->writeLog('URL: ' . print_r($this->getTokenUrl(), true));
             $this->writeLog('POST: ' . print_r($request, true));
-            $this->writeLog(print_r($resultTxt, true));
+            $this->writeLog(print_r($result, true));
         }
 
         return false;

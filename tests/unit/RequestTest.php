@@ -4,7 +4,7 @@ namespace tests\unit;
 
 use AspectMock\Test as test;
 use esia\Request;
-
+use esia\transport\Curl;
 
 class RequestTest extends \Codeception\TestCase\Test
 {
@@ -30,13 +30,13 @@ class RequestTest extends \Codeception\TestCase\Test
         $request = $this->prepareRequest();
 
         // check if curl is not installed
-        test::func('esia', 'curl_init', false);
+        test::func('esia\transport', 'curl_init', false);
         $response = $request->call('stub');
         $this->assertNull($response);
 
         // check if correct call
         test::clean();
-        test::func('esia', 'curl_exec', '{}');
+        test::func('esia\transport', 'curl_exec', '{}');
         $response = $request->call('stub');
         $this->assertTrue($response instanceof \stdClass);
 
@@ -45,7 +45,7 @@ class RequestTest extends \Codeception\TestCase\Test
 
     protected function prepareRequest()
     {
-        return new Request($this->url, $this->token);
+        return new Request($this->url, $this->token, new Curl());
     }
 
     protected function _before()

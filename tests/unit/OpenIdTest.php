@@ -1,4 +1,5 @@
 <?php
+
 namespace tests\unit;
 
 use AspectMock\Proxy\InstanceProxy;
@@ -8,12 +9,13 @@ use esia\exceptions\RequestFailException;
 use esia\exceptions\SignFailException;
 use esia\OpenId;
 use esia\Request;
+use esia\transport\Curl;
 
 class OpenIdTest extends \Codeception\TestCase\Test
 {
     public $config;
 
-    public function __construct($name = null, array $data = array(), $dataName = '')
+    public function __construct($name = null, array $data = [], $dataName = '')
     {
         $this->config = [
             'clientId' => 'INSP03211',
@@ -26,8 +28,8 @@ class OpenIdTest extends \Codeception\TestCase\Test
         ];
 
         // define function for push them from global namespace
-        test::func('esia', 'curl_init', false);
-        test::func('esia', 'curl_exec', false);
+        test::func('esia\transport', 'curl_init', false);
+        test::func('esia\transport', 'curl_exec', false);
         test::func('esia', 'openssl_pkcs7_sign', false);
         test::func('esia', 'openssl_pkey_get_private', false);
         test::func('esia', 'openssl_x509_read', false);
@@ -60,16 +62,16 @@ class OpenIdTest extends \Codeception\TestCase\Test
     {
 
 
-        test::func('esia', 'curl_init', false);
+        test::func('esia\transport', 'curl_init', false);
         $this->assertFalse($this->openId->getToken('test'));
         test::clean();
 
         $oid = 123;
         $oidBase64 = $this->urlSafe(base64_encode('{ "urn:esia:sbj_id" : ' . $oid . '}'));
 
-        $curlResult = '{ "access_token" : "test.' . $oidBase64 . '.test" }';
-        test::func('esia', 'curl_exec', $curlResult);
-        $token = $this->openId->getToken('test');
+        $curlResult = '{ "access_token" : "test.' . $oidBase64 . '.test", "expires_in" : 3600 }';
+        test::func('esia\transport', 'curl_exec', $curlResult);
+        $token = $this->openId->getToken($curlResult);
         $this->assertNotFalse($token);
         $this->assertEquals($oid, $this->openId->oid);
         test::clean();
@@ -155,8 +157,9 @@ class OpenIdTest extends \Codeception\TestCase\Test
                 $elements = new \stdClass();
                 $elements->size = 3;
                 $elements->elements = [1, 2, 3];
+
                 return $elements;
-            }
+            },
         ]);
 
         /** @var OpenId|InstanceProxy $openId */
@@ -181,13 +184,14 @@ class OpenIdTest extends \Codeception\TestCase\Test
             $elements = new \stdClass();
             $elements->size = 0;
             $elements->elements = [];
+
             return $elements;
         };
 
         /** @var OpenId|InstanceProxy $openId */
         $openId = test::double($this->openId, [
             'call' => $returnElements,
-            'collectArrayElements' => false
+            'collectArrayElements' => false,
         ]);
 
         $openId->token = 'test';
@@ -214,7 +218,7 @@ class OpenIdTest extends \Codeception\TestCase\Test
 
     public function prepareOpenId()
     {
-        return new OpenId($this->config);
+        return new OpenId($this->config, new Curl());
     }
 
 
@@ -257,6 +261,7 @@ class OpenIdTest extends \Codeception\TestCase\Test
      * Url safe for base64
      *
      * @param string $string
+     *
      * @return string
      */
     private function urlSafe($string)

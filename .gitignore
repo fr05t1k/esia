@@ -2,3 +2,4 @@
 tests/tmp/*
 tests/_output/*
 vendor
+composer.lock

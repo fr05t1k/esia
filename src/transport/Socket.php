@@ -6,12 +6,17 @@
  * Time: 12:04
  */
 
-namespace common\components\esia\transport;
+namespace esia\transport;
 
 use Exception;
 use esia\exceptions\HttpException;
 
-class Socket
+/**
+ * Class Socket
+ *
+ * @package esia\transport
+ */
+class Socket implements EsiaTransportInterface
 {
     /**
      * @var array
@@ -40,7 +45,8 @@ class Socket
         $content = http_build_query($params);
 
         $headers = array_merge([
-            'GET ' . $url['path'] . ($params ? "?" . $content : "") . ' HTTP/1.0',
+            'GET ' . (isset($url['path']) ? $url['path'] : '/') .
+            ($params ? "?" . $content : "") . ' HTTP/1.0',
             'Content-Type: application/json',
             'Host: ' . $url['host'],
             //'Content-Length: ' . strlen($content),

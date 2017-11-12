@@ -18,7 +18,7 @@ interface EsiaTransportInterface
      * @param $params
      * @param array $headers
      *
-     * @return string
+     * @return \stdClass|array
      * @throws HttpException
      */
     public function post($url, $params, $headers = []);
@@ -28,7 +28,7 @@ interface EsiaTransportInterface
      * @param $params
      * @param array $headers
      *
-     * @return string
+     * @return \stdClass|array
      * @throws HttpException
      */
     public function get($url, $params, $headers = []);

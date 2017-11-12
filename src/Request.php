@@ -2,11 +2,13 @@
 
 namespace esia;
 
+use esia\exceptions\RequestFailException;
 use esia\transport\EsiaTransportInterface;
 
 
 /**
  * Class Request
+ *
  * @package esia
  */
 class Request
@@ -32,6 +34,7 @@ class Request
 
     /**
      * Request constructor.
+     *
      * @param string $url
      * @param string $token
      * @param $transport
@@ -61,7 +64,9 @@ class Request
      *
      * @param string $method url
      * @param bool $withScheme if we need request with scheme
+     *
      * @return null|\stdClass
+     * @throws RequestFailException
      */
     public function call($method, $withScheme = false)
     {
@@ -70,11 +75,11 @@ class Request
         $result = $this->transport->get($url, [], ['Authorization: Bearer ' . $this->token]);
         if ($result) {
             $return = json_decode($result);
-            if($return == null){
-                print $result;exit;
+            if (json_last_error() === JSON_ERROR_NONE && $return !== null) {
+                return $return;
             }
-            return $return;
         }
+
         return null;
     }
 

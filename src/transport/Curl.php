@@ -11,7 +11,7 @@ namespace esia\transport;
 use Exception;
 use esia\exceptions\HttpException;
 
-class Curl
+class Curl implements EsiaTransportInterface
 {
     /**
      * @var array
@@ -39,10 +39,18 @@ class Curl
         ], $headers, $this->headers);
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, false);
-        // curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        if(!is_resource($ch)) {
+            return null;
+        }
+
+        $options = [
+            CURLOPT_URL => $url,
+            CURLOPT_POST => false,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $headers
+        ];
+        curl_setopt_array($ch, $options);
 
         $result = curl_exec($ch);
         if (curl_errno($ch)) {
@@ -62,21 +70,20 @@ class Curl
      */
     public function post($url, $params, $headers = [])
     {
-        // TODO: make tests
-        $urlparts = parse_url($url);
-        $headers = array_merge([
-            'POST ' . $urlparts['path'] . " HTTP/1.0",
-            'Content-Type: application/x-www-form-urlencoded',
-            'Content-length: ' . strlen(http_build_query($params)),
-            'Connection: close'
-        ], $headers, $this->headers);
-
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        if(!is_resource($ch)) {
+            return null;
+        }
+
+        $options = [
+            CURLOPT_URL => $url,
+            CURLOPT_POSTFIELDS => http_build_query($params),
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $headers
+        ];
+
+        curl_setopt_array($ch, $options);
 
         $result = curl_exec($ch);
         if (curl_errno($ch)) {
