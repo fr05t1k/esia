@@ -1,7 +1,7 @@
 <?php
 
 
-namespace esia\exceptions;
+namespace Esia\exceptions;
 
 
 use Exception;

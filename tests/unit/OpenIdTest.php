@@ -4,10 +4,10 @@ namespace tests\unit;
 use AspectMock\Proxy\InstanceProxy;
 use AspectMock\Test as test;
 use Codeception\Util\Stub;
-use esia\exceptions\RequestFailException;
-use esia\exceptions\SignFailException;
-use esia\OpenId;
-use esia\Request;
+use Esia\exceptions\RequestFailException;
+use Esia\exceptions\SignFailException;
+use Esia\OpenId;
+use Esia\Request;
 
 class OpenIdTest extends \Codeception\TestCase\Test
 {

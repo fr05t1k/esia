@@ -1,6 +1,6 @@
 <?php
 
-namespace esia\exceptions;
+namespace Esia\exceptions;
 
 class SignFailException extends BaseException
 {

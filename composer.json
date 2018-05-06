@@ -1,10 +1,11 @@
 {
     "name": "fr05t1k/esia",
+    "license": "MIT",
     "description": "OpenID ESIA authenticating",
     "keywords": ["esia", "openid", "egov"],
     "autoload": {
         "psr-4": {
-            "esia\\": "src/"
+            "Esia\\": "src/Esia"
         }
     },
     "require-dev": {

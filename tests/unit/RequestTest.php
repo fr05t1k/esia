@@ -3,7 +3,7 @@
 namespace tests\unit;
 
 use AspectMock\Test as test;
-use esia\Request;
+use Esia\Request;
 
 
 class RequestTest extends \Codeception\TestCase\Test

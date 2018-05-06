@@ -1,8 +1,8 @@
 <?php
-namespace esia;
+namespace Esia;
 
-use esia\exceptions\RequestFailException;
-use esia\exceptions\SignFailException;
+use Esia\exceptions\RequestFailException;
+use Esia\exceptions\SignFailException;
 
 /**
  * Class OpenId
