@@ -52,6 +52,7 @@ $esia->getToken($_GET['code']);
 $personInfo = $esia->getPersonInfo();
 $addressInfo = $esia->getAddressInfo();
 $contactInfo = $esia->getContactInfo();
+$documentInfo = $esia->getDocInfo();
 
 ```
 # Конфиг
