@@ -103,7 +103,7 @@ class Config
     /**
      * @param string $oid
      */
-    public function setOid(string $oid): string
+    public function setOid(string $oid): void
     {
         $this->oid = $oid;
     }

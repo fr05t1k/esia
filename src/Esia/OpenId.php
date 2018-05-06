@@ -4,10 +4,12 @@ namespace Esia;
 
 use Esia\Exceptions\RequestFailException;
 use Esia\Exceptions\SignFailException;
+use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ClientException;
 
 /**
  * Class OpenId
- * @package esia
  */
 class OpenId
 {
@@ -15,6 +17,11 @@ class OpenId
      * @var callable|null
      */
     public $log = null;
+
+    /**
+     * @var ClientInterface
+     */
+    private $client;
 
     /**
      * Config
@@ -26,6 +33,7 @@ class OpenId
     public function __construct(Config $config)
     {
         $this->config = $config;
+        $this->client = new Client();
     }
 
     /**
@@ -105,6 +113,7 @@ class OpenId
      * @param $code
      * @return false|string
      * @throws SignFailException
+     * @throws RequestFailException
      */
     public function getToken($code)
     {
@@ -122,7 +131,7 @@ class OpenId
             throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
         }
 
-        $request = [
+        $body = [
             'client_id' => $this->config->getClientId(),
             'code' => $code,
             'grant_type' => 'authorization_code',
@@ -135,22 +144,16 @@ class OpenId
             'refresh_token' => $state,
         ];
 
-        $curl = curl_init();
-
-        if ($curl === false) {
-            return false;
+        try {
+            $response = $this->client->post(
+                $this->getTokenUrl(),
+                ['form_params' => $body]
+            );
+        } catch (ClientException $e) {
+            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
         }
 
-        $options = [
-            CURLOPT_URL => $this->getTokenUrl(),
-            CURLOPT_POSTFIELDS => http_build_query($request),
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-        ];
-
-        curl_setopt_array($curl, $options);
-
-        $result = curl_exec($curl);
+        $result = $response->getBody()->getContents();
         $result = json_decode($result);
 
         $this->writeLog(print_r($result, true));

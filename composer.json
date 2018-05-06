@@ -1,16 +1,22 @@
 {
-    "name": "fr05t1k/esia",
-    "license": "MIT",
-    "description": "OpenID ESIA authenticating",
-    "keywords": ["esia", "openid", "egov"],
-    "autoload": {
-        "psr-4": {
-            "Esia\\": "src/Esia"
-        }
-    },
-    "require-dev": {
-        "codeception/codeception": "2.1.3",
-        "codeception/aspect-mock": "0.5.3"
+  "name": "fr05t1k/esia",
+  "license": "MIT",
+  "description": "OpenID ESIA authenticating",
+  "keywords": [
+    "esia",
+    "openid",
+    "egov"
+  ],
+  "autoload": {
+    "psr-4": {
+      "Esia\\": "src/Esia"
     }
-
+  },
+  "require": {
+    "guzzlehttp/guzzle": "^6.1.0"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-master",
+    "codeception/codeception": "^2.3"
+  }
 }
