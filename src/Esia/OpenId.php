@@ -7,16 +7,15 @@ use Esia\Exceptions\SignFailException;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\ClientException;
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 
 /**
  * Class OpenId
  */
 class OpenId
 {
-    /**
-     * @var callable|null
-     */
-    public $log = null;
+    use LoggerAwareTrait;
 
     /**
      * @var ClientInterface
@@ -34,6 +33,7 @@ class OpenId
     {
         $this->config = $config;
         $this->client = new Client();
+        $this->logger = new NullLogger();
     }
 
     /**
@@ -98,16 +98,6 @@ class OpenId
     }
 
     /**
-     * Return an url for request person information
-     *
-     * @return string
-     */
-    private function getPersonUrl(): string
-    {
-        return $this->config->getPortalUrl() . $this->config->getPersonUrl();
-    }
-
-    /**
      * Method collect a token with given code
      *
      * @param $code
@@ -150,22 +140,22 @@ class OpenId
                 ['form_params' => $body]
             );
         } catch (ClientException $e) {
+            $this->logger->debug($e->getResponse()->getBody()->getContents());
             throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
         }
 
-        $result = $response->getBody()->getContents();
-        $result = json_decode($result);
+        $responseBody = $response->getBody()->getContents();
+        $this->logger->debug('Response: ' . $responseBody);
+        $payload = json_decode($responseBody, true);
 
-        $this->writeLog(print_r($result, true));
+        $this->logger->debug('Payload: ', $payload);
 
-        $this->config->setToken($result->access_token);
+        $this->config->setToken($payload['access_token']);
 
         # get object id from token
         $chunks = explode('.', $this->config->getToken());
-        $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
-        $this->config->setOid($payload->{'urn:esia:sbj_id'});
-
-        $this->writeLog(var_export($payload, true));
+        $payload = json_decode($this->base64UrlSafeDecode($chunks[1]), true);
+        $this->config->setOid($payload['urn:esia:sbj_id']);
 
         return $this->config->getToken();
     }
@@ -179,7 +169,7 @@ class OpenId
      * @return string
      * @throws SignFailException
      */
-    public function signPKCS7($message)
+    public function signPKCS7($message): string
     {
         $this->checkFilesExists();
 
@@ -192,7 +182,7 @@ class OpenId
             throw new SignFailException(SignFailException::CODE_CANT_READ_CERT);
         }
 
-        $this->writeLog('Cert: ' . print_r($cert, true));
+        $this->logger->debug('Cert: ' . print_r($cert, true), ['cert' => $cert]);
 
         $privateKey = openssl_pkey_get_private($keyContent, $this->config->getPrivateKeyPassword());
 
@@ -200,7 +190,7 @@ class OpenId
             throw new SignFailException(SignFailException::CODE_CANT_READ_PRIVATE_KEY);
         }
 
-        $this->writeLog('Private key: : ' . print_r($privateKey, true));
+        $this->logger->debug('Private key: : ' . print_r($privateKey, true), ['privateKey' => $privateKey]);
 
         // random unique directories for sign
         $messageFile = $this->config->getTmpPath() . DIRECTORY_SEPARATOR . $this->getRandomString();
@@ -216,10 +206,10 @@ class OpenId
         );
 
         if ($signResult) {
-            $this->writeLog('Sign success');
+            $this->logger->debug('Sign success');
         } else {
-            $this->writeLog('Sign fail');
-            $this->writeLog('SSH error: ' . openssl_error_string());
+            $this->logger->error('Sign fail');
+            $this->logger->error('SSL error: ' . openssl_error_string());
             throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
         }
 
@@ -229,13 +219,12 @@ class OpenId
         $signed = explode("\n\n", $signed);
 
         # get third section which contains sign and join into one line
-        $sign = str_replace("\n", "", $this->urlSafe($signed[3]));
+        $sign = str_replace("\n", '', $this->urlSafe($signed[3]));
 
         unlink($signFile);
         unlink($messageFile);
 
         return $sign;
-
     }
 
     /**
@@ -245,7 +234,7 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|\stdClass
+     * @return null|array
      */
     public function getPersonInfo()
     {
@@ -270,8 +259,8 @@ class OpenId
         $request = $this->buildRequest();
         $result = $request->call($url);
 
-        if ($result && $result->size > 0) {
-            return $this->collectArrayElements($result->elements);
+        if ($result && $result['size'] > 0) {
+            return $this->collectArrayElements($result['elements']);
         }
 
         return $result;
@@ -285,7 +274,7 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|\stdClass
+     * @return null|array
      */
     public function getAddressInfo()
     {
@@ -293,8 +282,8 @@ class OpenId
         $request = $this->buildRequest();
         $result = $request->call($url);
 
-        if ($result && $result->size > 0) {
-            return $this->collectArrayElements($result->elements);
+        if ($result && $result['size'] > 0) {
+            return $this->collectArrayElements($result['elements']);
         }
 
         return null;
@@ -307,16 +296,16 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|\stdClass
+     * @return null|array
      */
-    public function getDocInfo()
+    public function getDocInfo(): ?array
     {
         $url = $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/docs';
         $request = $this->buildRequest();
         $result = $request->call($url);
 
-        if ($result && $result->size > 0) {
-            return $this->collectArrayElements($result->elements);
+        if ($result && $result['size'] > 0) {
+            return $this->collectArrayElements($result['elements']);
         }
 
         return $result;
@@ -335,12 +324,11 @@ class OpenId
     {
         $result = [];
         foreach ($elements as $element) {
-
             $request = $this->buildRequest();
             $source = $request->call($element, true);
 
             if ($source) {
-                array_push($result, $source);
+                $result[] = $source;
             }
 
         }
@@ -357,6 +345,7 @@ class OpenId
         if (!$this->config->getToken()) {
             throw new RequestFailException(RequestFailException::CODE_TOKEN_IS_EMPTY);
         }
+
 
         return new Request($this->config->getPortalUrl(), $this->config->getToken());
     }
@@ -434,20 +423,6 @@ class OpenId
         $base64 = strtr($string, '-_', '+/');
 
         return base64_decode($base64);
-    }
-
-    /**
-     * Write log
-     *
-     * @param string $message
-     */
-    private function writeLog($message): void
-    {
-        $log = $this->log;
-
-        if (is_callable($log)) {
-            $log($message);
-        }
     }
 
     /**

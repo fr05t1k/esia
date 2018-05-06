@@ -51,7 +51,7 @@ class Request
      *
      * @param string $method url
      * @param bool $withScheme if we need request with scheme
-     * @return null|\stdClass
+     * @return null|array
      */
     public function call($method, $withScheme = false)
     {
@@ -64,7 +64,7 @@ class Request
         $url = $withScheme ? $method : $this->url . $method;
         curl_setopt($ch, CURLOPT_URL, $url);
 
-        return json_decode(curl_exec($ch));
+        return json_decode(curl_exec($ch), true);
     }
 
     /**
@@ -76,7 +76,6 @@ class Request
         $ch = curl_init();
 
         if (is_resource($ch)) {
-
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token]);
 
