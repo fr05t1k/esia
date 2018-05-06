@@ -4,8 +4,8 @@ namespace tests\unit;
 use AspectMock\Proxy\InstanceProxy;
 use AspectMock\Test as test;
 use Codeception\Util\Stub;
-use Esia\exceptions\RequestFailException;
-use Esia\exceptions\SignFailException;
+use Esia\Exceptions\RequestFailException;
+use Esia\Exceptions\SignFailException;
 use Esia\OpenId;
 use Esia\Request;
 

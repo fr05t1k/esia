@@ -1,8 +1,9 @@
 <?php
+
 namespace Esia;
 
-use Esia\exceptions\RequestFailException;
-use Esia\exceptions\SignFailException;
+use Esia\Exceptions\RequestFailException;
+use Esia\Exceptions\SignFailException;
 
 /**
  * Class OpenId
@@ -10,91 +11,72 @@ use Esia\exceptions\SignFailException;
  */
 class OpenId
 {
-    public $clientId;
-    public $redirectUrl;
-
     /**
      * @var callable|null
      */
     public $log = null;
-    public $portalUrl = 'https://esia-portal1.test.gosuslugi.ru/';
-    public $tokenUrl = 'aas/oauth2/te';
-    public $codeUrl = 'aas/oauth2/ac';
-    public $personUrl = 'rs/prns';
-    public $privateKeyPath;
-    public $privateKeyPassword;
-    public $certPath;
-    public $oid = null;
 
-    protected $scope = 'fullname birthdate gender email mobile id_doc snils inn';
+    /**
+     * Config
+     *
+     * @var Config
+     */
+    private $config;
 
-    protected $clientSecret = null;
-    protected $responseType = 'code';
-    protected $state = null;
-    protected $timestamp = null;
-    protected $accessType = 'offline';
-    protected $tmpPath;
-
-    private $url = null;
-    public $token = null;
-
-    public function __construct(array $config = [])
+    public function __construct(Config $config)
     {
-        foreach ($config as $k => $v) {
-            if (property_exists($this, $k)) {
-                $this->$k = $v;
-            }
-        }
+        $this->config = $config;
     }
 
     /**
      * Return an url for authentication
      *
-     * ```
-     *     <a href="<?=$esia->getUrl()?>">Login</a>
+     * ```php
+     *     <a href="<?=$esia->buildUrl()?>">Login</a>
      * ```
      *
      * @return string|false
+     * @throws SignFailException
      */
-    public function getUrl()
+    public function buildUrl()
     {
-        $this->timestamp = $this->getTimeStamp();
-        $this->state = $this->getState();
-        $this->clientSecret = $this->scope . $this->timestamp . $this->clientId . $this->state;
-        $this->clientSecret = $this->signPKCS7($this->clientSecret);
+        $timestamp = $this->getTimeStamp();
+        $state = $this->buildState();
+        $message = $this->config->getScope()
+            . $timestamp
+            . $this->config->getClientId()
+            . $state;
 
-        if ($this->clientSecret === false) {
+        $clientSecret = $this->signPKCS7($message);
+
+        if ($clientSecret === false) {
             return false;
         }
 
         $url = $this->getCodeUrl() . '?%s';
 
         $params = [
-            'client_id' => $this->clientId,
-            'client_secret' => $this->clientSecret,
-            'redirect_uri' => $this->redirectUrl,
-            'scope' => $this->scope,
-            'response_type' => $this->responseType,
-            'state' => $this->state,
-            'access_type' => $this->accessType,
-            'timestamp' => $this->timestamp,
+            'client_id' => $this->config->getClientId(),
+            'client_secret' => $clientSecret,
+            'redirect_uri' => $this->config->getRedirectUrl(),
+            'scope' => $this->config->getScope(),
+            'response_type' => $this->config->getResponseType(),
+            'state' => $state,
+            'access_type' => $this->config->getAccessType(),
+            'timestamp' => $timestamp,
         ];
 
         $request = http_build_query($params);
 
-        $this->url = sprintf($url, $request);
-
-        return $this->url;
+        return sprintf($url, $request);
     }
 
     /**
      * Return an url for request to get an access token
-     *
-     * @return string
      */
-    public function getTokenUrl()
+    private function getTokenUrl(): string
     {
-        return $this->portalUrl . $this->tokenUrl;
+        return $this->config->getPortalUrl() . $this->config->getTokenUrl();
     }
 
     /**
@@ -102,9 +84,9 @@ class OpenId
      *
      * @return string
      */
-    public function getCodeUrl()
+    private function getCodeUrl(): string
     {
-        return $this->portalUrl . $this->codeUrl;
+        return $this->config->getPortalUrl() . $this->config->getCodeUrl();
     }
 
     /**
@@ -112,9 +94,9 @@ class OpenId
      *
      * @return string
      */
-    public function getPersonUrl()
+    private function getPersonUrl(): string
     {
-        return $this->portalUrl . $this->personUrl;
+        return $this->config->getPortalUrl() . $this->config->getPersonUrl();
     }
 
     /**
@@ -126,26 +108,31 @@ class OpenId
      */
     public function getToken($code)
     {
-        $this->timestamp = $this->getTimeStamp();
-        $this->state = $this->getState();
+        $timestamp = $this->getTimeStamp();
+        $state = $this->buildState();
 
-        $clientSecret = $this->signPKCS7($this->scope . $this->timestamp . $this->clientId . $this->state);
+        $clientSecret = $this->signPKCS7(
+            $this->config->getScope()
+            . $timestamp
+            . $this->config->getClientId()
+            . $state
+        );
 
         if ($clientSecret === false) {
             throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
         }
 
         $request = [
-            'client_id' => $this->clientId,
+            'client_id' => $this->config->getClientId(),
             'code' => $code,
             'grant_type' => 'authorization_code',
             'client_secret' => $clientSecret,
-            'state' => $this->state,
-            'redirect_uri' => $this->redirectUrl,
-            'scope' => $this->scope,
-            'timestamp' => $this->timestamp,
+            'state' => $state,
+            'redirect_uri' => $this->config->getRedirectUrl(),
+            'scope' => $this->config->getScope(),
+            'timestamp' => $timestamp,
             'token_type' => 'Bearer',
-            'refresh_token' => $this->state,
+            'refresh_token' => $state,
         ];
 
         $curl = curl_init();
@@ -168,16 +155,16 @@ class OpenId
 
         $this->writeLog(print_r($result, true));
 
-        $this->token = $result->access_token;
+        $this->config->setToken($result->access_token);
 
         # get object id from token
-        $chunks = explode('.', $this->token);
+        $chunks = explode('.', $this->config->getToken());
         $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
-        $this->oid = $payload->{'urn:esia:sbj_id'};
+        $this->config->setOid($payload->{'urn:esia:sbj_id'});
 
         $this->writeLog(var_export($payload, true));
 
-        return $this->token;
+        return $this->config->getToken();
     }
 
 
@@ -193,8 +180,8 @@ class OpenId
     {
         $this->checkFilesExists();
 
-        $certContent = file_get_contents($this->certPath);
-        $keyContent = file_get_contents($this->privateKeyPath);
+        $certContent = file_get_contents($this->config->getCertPath());
+        $keyContent = file_get_contents($this->config->getPrivateKeyPath());
 
         $cert = openssl_x509_read($certContent);
 
@@ -204,7 +191,7 @@ class OpenId
 
         $this->writeLog('Cert: ' . print_r($cert, true));
 
-        $privateKey = openssl_pkey_get_private($keyContent, $this->privateKeyPassword);
+        $privateKey = openssl_pkey_get_private($keyContent, $this->config->getPrivateKeyPassword());
 
         if ($privateKey === false) {
             throw new SignFailException(SignFailException::CODE_CANT_READ_PRIVATE_KEY);
@@ -213,8 +200,8 @@ class OpenId
         $this->writeLog('Private key: : ' . print_r($privateKey, true));
 
         // random unique directories for sign
-        $messageFile = $this->tmpPath . DIRECTORY_SEPARATOR . $this->getRandomString();
-        $signFile = $this->tmpPath . DIRECTORY_SEPARATOR . $this->getRandomString();
+        $messageFile = $this->config->getTmpPath() . DIRECTORY_SEPARATOR . $this->getRandomString();
+        $signFile = $this->config->getTmpPath() . DIRECTORY_SEPARATOR . $this->getRandomString();
         file_put_contents($messageFile, $message);
 
         $signResult = openssl_pkcs7_sign(
@@ -259,7 +246,7 @@ class OpenId
      */
     public function getPersonInfo()
     {
-        $url = $this->personUrl . '/' . $this->oid;
+        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid();
 
         $request = $this->buildRequest();
         return $request->call($url);
@@ -276,7 +263,7 @@ class OpenId
      */
     public function getContactInfo()
     {
-        $url = $this->personUrl . '/' . $this->oid . '/ctts';
+        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/ctts';
         $request = $this->buildRequest();
         $result = $request->call($url);
 
@@ -299,7 +286,7 @@ class OpenId
      */
     public function getAddressInfo()
     {
-        $url = $this->personUrl . '/' . $this->oid . '/addrs';
+        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/addrs';
         $request = $this->buildRequest();
         $result = $request->call($url);
 
@@ -321,7 +308,7 @@ class OpenId
      */
     public function getDocInfo()
     {
-        $url = $this->personUrl . '/' . $this->oid . '/docs';
+        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/docs';
         $request = $this->buildRequest();
         $result = $request->call($url);
 
@@ -341,7 +328,7 @@ class OpenId
      * @return array
      * @throws \Exception
      */
-    protected function collectArrayElements($elements)
+    protected function collectArrayElements($elements): array
     {
         $result = [];
         foreach ($elements as $element) {
@@ -362,27 +349,27 @@ class OpenId
      * @return Request
      * @throws RequestFailException
      */
-    public function buildRequest()
+    public function buildRequest(): Request
     {
-        if (!$this->token) {
+        if (!$this->config->getToken()) {
             throw new RequestFailException(RequestFailException::CODE_TOKEN_IS_EMPTY);
         }
 
-        return new Request($this->portalUrl, $this->token);
+        return new Request($this->config->getPortalUrl(), $this->config->getToken());
     }
 
     /**
      * @throws SignFailException
      */
-    protected function checkFilesExists()
+    protected function checkFilesExists(): void
     {
-        if (! file_exists($this->certPath)) {
+        if (!file_exists($this->config->getCertPath())) {
             throw new SignFailException(SignFailException::CODE_NO_SUCH_CERT_FILE);
         }
-        if (! file_exists($this->privateKeyPath)) {
+        if (!file_exists($this->config->getPrivateKeyPath())) {
             throw new SignFailException(SignFailException::CODE_NO_SUCH_KEY_FILE);
         }
-        if (! file_exists($this->tmpPath)) {
+        if (!file_exists($this->config->getTmpPath())) {
             throw new SignFailException(SignFailException::CODE_NO_TEMP_DIRECTORY);
         }
     }
@@ -390,9 +377,9 @@ class OpenId
     /**
      * @return string
      */
-    private function getTimeStamp()
+    private function getTimeStamp(): string
     {
-        return date("Y.m.d H:i:s O");
+        return date('Y.m.d H:i:s O');
     }
 
 
@@ -400,16 +387,25 @@ class OpenId
      * Generate state with uuid
      *
      * @return string
+     * @throws SignFailException
      */
-    private function getState()
+    private function buildState(): string
     {
-        return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-        );
+        try {
+            return sprintf(
+                '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+                random_int(0, 0xffff),
+                random_int(0, 0xffff),
+                random_int(0, 0xffff),
+                random_int(0, 0x0fff) | 0x4000,
+                random_int(0, 0x3fff) | 0x8000,
+                random_int(0, 0xffff),
+                random_int(0, 0xffff),
+                random_int(0, 0xffff)
+            );
+        } catch (\Exception $e) {
+            throw new SignFailException(SignFailException::CODE_CANNOT_GENERATE_RANDOM_INT);
+        }
     }
 
     /**
@@ -418,7 +414,7 @@ class OpenId
      * @param string $string
      * @return string
      */
-    private function urlSafe($string)
+    private function urlSafe($string): string
     {
         return rtrim(strtr(trim($string), '+/', '-_'), '=');
     }
@@ -430,7 +426,7 @@ class OpenId
      * @param string $string
      * @return string
      */
-    private function base64UrlSafeDecode($string)
+    private function base64UrlSafeDecode($string): string
     {
         $base64 = strtr($string, '-_', '+/');
 
@@ -442,7 +438,7 @@ class OpenId
      *
      * @param string $message
      */
-    private function writeLog($message)
+    private function writeLog($message): void
     {
         $log = $this->log;
 
@@ -450,15 +446,14 @@ class OpenId
             $log($message);
         }
     }
-    
+
     /**
      * Generate random unique string
      *
      * @return string
      */
-    private function getRandomString()
+    private function getRandomString(): string
     {
         return md5(uniqid(mt_rand(), true));
     }
 }
-
