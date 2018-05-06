@@ -7,7 +7,7 @@ class Config
 
     private $clientId;
     private $redirectUrl;
-    private $portalUrl = 'https://esia-portal1.test.gosuslugi.ru/';
+    private $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
     private $tokenUrl = 'aas/oauth2/te';
     private $codeUrl = 'aas/oauth2/ac';
     private $personUrl = 'rs/prns';

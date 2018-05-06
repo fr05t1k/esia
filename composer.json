@@ -14,7 +14,8 @@
   },
   "require": {
     "guzzlehttp/guzzle": "^6.1.0",
-    "psr/log": "^1.0"
+    "psr/log": "^1.0",
+    "psr/http-message": "^1.0"
   },
   "require-dev": {
     "roave/security-advisories": "dev-master",

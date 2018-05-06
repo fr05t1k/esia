@@ -2,11 +2,16 @@
 
 namespace Esia;
 
+use Esia\Exceptions\AbstractEsiaException;
+use Esia\Exceptions\ForbiddenException;
 use Esia\Exceptions\RequestFailException;
 use Esia\Exceptions\SignFailException;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Psr7\Request;
+use Psr\Http\Message\RequestInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 
@@ -18,6 +23,8 @@ class OpenId
     use LoggerAwareTrait;
 
     /**
+     * Http Client
+     *
      * @var ClientInterface
      */
     private $client;
@@ -29,10 +36,10 @@ class OpenId
      */
     private $config;
 
-    public function __construct(Config $config)
+    public function __construct(Config $config, Client $client = null)
     {
         $this->config = $config;
-        $this->client = new Client();
+        $this->client = $client ?? new Client();
         $this->logger = new NullLogger();
     }
 
@@ -80,32 +87,15 @@ class OpenId
     }
 
     /**
-     * Return an url for request to get an access token
-     */
-    private function getTokenUrl(): string
-    {
-        return $this->config->getPortalUrl() . $this->config->getTokenUrl();
-    }
-
-    /**
-     * Return an url for request to get an authorization code
-     *
-     * @return string
-     */
-    private function getCodeUrl(): string
-    {
-        return $this->config->getPortalUrl() . $this->config->getCodeUrl();
-    }
-
-    /**
      * Method collect a token with given code
      *
-     * @param $code
-     * @return false|string
-     * @throws SignFailException
+     * @param string $code
+     * @return string
      * @throws RequestFailException
+     * @throws SignFailException
+     * @throws AbstractEsiaException
      */
-    public function getToken($code)
+    public function getToken(string $code): string
     {
         $timestamp = $this->getTimeStamp();
         $state = $this->buildState();
@@ -134,30 +124,28 @@ class OpenId
             'refresh_token' => $state,
         ];
 
-        try {
-            $response = $this->client->post(
+        $payload = $this->sendRequest(
+            new Request(
+                'POST',
                 $this->getTokenUrl(),
-                ['form_params' => $body]
-            );
-        } catch (ClientException $e) {
-            $this->logger->debug($e->getResponse()->getBody()->getContents());
-            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
-        }
-
-        $responseBody = $response->getBody()->getContents();
-        $this->logger->debug('Response: ' . $responseBody);
-        $payload = json_decode($responseBody, true);
+                [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ],
+                http_build_query($body)
+            )
+        );
 
         $this->logger->debug('Payload: ', $payload);
 
-        $this->config->setToken($payload['access_token']);
+        $token = $payload['access_token'];
+        $this->config->setToken($token);
 
         # get object id from token
-        $chunks = explode('.', $this->config->getToken());
+        $chunks = explode('.', $token);
         $payload = json_decode($this->base64UrlSafeDecode($chunks[1]), true);
         $this->config->setOid($payload['urn:esia:sbj_id']);
 
-        return $this->config->getToken();
+        return $token;
     }
 
 
@@ -236,12 +224,11 @@ class OpenId
      * @throws \Exception
      * @return null|array
      */
-    public function getPersonInfo()
+    public function getPersonInfo(): array
     {
-        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid();
+        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid();
 
-        $request = $this->buildRequest();
-        return $request->call($url);
+        return $this->sendRequest(new Request('GET', $url));
     }
 
     /**
@@ -251,19 +238,18 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|\stdClass
+     * @return array
      */
-    public function getContactInfo()
+    public function getContactInfo(): array
     {
-        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/ctts';
-        $request = $this->buildRequest();
-        $result = $request->call($url);
+        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/ctts';
+        $payload = $this->sendRequest(new Request('GET', $url));
 
-        if ($result && $result['size'] > 0) {
-            return $this->collectArrayElements($result['elements']);
+        if ($payload && $payload['size'] > 0) {
+            return $this->collectArrayElements($payload['elements']);
         }
 
-        return $result;
+        return $payload;
     }
 
 
@@ -274,19 +260,18 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|array
+     * @return array
      */
-    public function getAddressInfo()
+    public function getAddressInfo(): array
     {
-        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/addrs';
-        $request = $this->buildRequest();
-        $result = $request->call($url);
+        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/addrs';
+        $payload = $this->sendRequest(new Request('GET', $url));
 
-        if ($result && $result['size'] > 0) {
-            return $this->collectArrayElements($result['elements']);
+        if ($payload['size'] > 0) {
+            return $this->collectArrayElements($payload['elements']);
         }
 
-        return null;
+        return $payload;
     }
 
     /**
@@ -296,19 +281,19 @@ class OpenId
      * calling this method
      *
      * @throws \Exception
-     * @return null|array
+     * @return array
      */
-    public function getDocInfo(): ?array
+    public function getDocInfo(): array
     {
-        $url = $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/docs';
-        $request = $this->buildRequest();
-        $result = $request->call($url);
+        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/docs';
 
-        if ($result && $result['size'] > 0) {
-            return $this->collectArrayElements($result['elements']);
+        $payload = $this->sendRequest(new Request('GET', $url));
+
+        if ($payload && $payload['size'] > 0) {
+            return $this->collectArrayElements($payload['elements']);
         }
 
-        return $result;
+        return $payload;
     }
 
     /**
@@ -320,15 +305,14 @@ class OpenId
      * @return array
      * @throws \Exception
      */
-    protected function collectArrayElements($elements): array
+    private function collectArrayElements($elements): array
     {
         $result = [];
-        foreach ($elements as $element) {
-            $request = $this->buildRequest();
-            $source = $request->call($element, true);
+        foreach ($elements as $elementUrl) {
+            $elementPayload = $this->sendRequest(new Request('GET', $elementUrl));
 
-            if ($source) {
-                $result[] = $source;
+            if ($elementPayload) {
+                $result[] = $elementPayload;
             }
 
         }
@@ -337,23 +321,9 @@ class OpenId
     }
 
     /**
-     * @return Request
-     * @throws RequestFailException
-     */
-    public function buildRequest(): Request
-    {
-        if (!$this->config->getToken()) {
-            throw new RequestFailException(RequestFailException::CODE_TOKEN_IS_EMPTY);
-        }
-
-
-        return new Request($this->config->getPortalUrl(), $this->config->getToken());
-    }
-
-    /**
      * @throws SignFailException
      */
-    protected function checkFilesExists(): void
+    private function checkFilesExists(): void
     {
         if (!file_exists($this->config->getCertPath())) {
             throw new SignFailException(SignFailException::CODE_NO_SUCH_CERT_FILE);
@@ -364,6 +334,66 @@ class OpenId
         if (!file_exists($this->config->getTmpPath())) {
             throw new SignFailException(SignFailException::CODE_NO_TEMP_DIRECTORY);
         }
+    }
+
+    /**
+     * @param RequestInterface $request
+     * @return array
+     * @throws AbstractEsiaException
+     */
+    private function sendRequest(RequestInterface $request): array
+    {
+        try {
+            if ($this->config->getToken()) {
+                $request = $request->withHeader('Authorization', 'Bearer ' . $this->config->getToken());
+            }
+            $response = $this->client->send($request);
+            $responseBody = json_decode($response->getBody()->getContents(), true);
+
+            if (!is_array($responseBody)) {
+                throw new \RuntimeException(
+                    sprintf(
+                        'Cannot decode response body. JSON error (%d): %s',
+                        json_last_error(),
+                        json_last_error_msg()
+                    )
+                );
+            }
+
+            return $responseBody;
+        } catch (ClientException $e) {
+            $this->logger->error('Request was failed', ['exception' => $e]);
+            if ($e->getResponse() !== null && $e->getResponse()->getStatusCode() === 403) {
+                throw new ForbiddenException(0, $e);
+            }
+
+            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
+        } catch (GuzzleException $e) {
+            $this->logger->error('Request was failed', ['exception' => $e]);
+            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
+        } catch (\RuntimeException $e) {
+            $this->logger->error('Cannot read body', ['exception' => $e]);
+            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
+        } catch (\InvalidArgumentException $e) {
+            $this->logger->error('Wrong header', ['exception' => $e]);
+            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
+        }
+    }
+
+    /**
+     * Return an url for request to get an access token
+     */
+    private function getTokenUrl(): string
+    {
+        return $this->config->getPortalUrl() . $this->config->getTokenUrl();
+    }
+
+    /**
+     * Return an url for request to get an authorization code
+     */
+    private function getCodeUrl(): string
+    {
+        return $this->config->getPortalUrl() . $this->config->getCodeUrl();
     }
 
     /**
