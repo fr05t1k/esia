@@ -5,8 +5,10 @@ namespace Esia;
 use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\ForbiddenException;
 use Esia\Exceptions\RequestFailException;
-use Esia\Exceptions\SignFailException;
+use Esia\Signer\Exceptions\SignFailException;
 use Esia\Http\GuzzleHttpClient;
+use Esia\Signer\SignerInterface;
+use Esia\Signer\SignerPKCS7;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
@@ -22,6 +24,11 @@ use Psr\Log\NullLogger;
 class OpenId
 {
     use LoggerAwareTrait;
+
+    /**
+     * @var SignerInterface
+     */
+    private $signer;
 
     /**
      * Http Client
@@ -42,6 +49,20 @@ class OpenId
         $this->config = $config;
         $this->client = $client ?? new GuzzleHttpClient(new Client());
         $this->logger = new NullLogger();
+        $this->signer = new SignerPKCS7(
+            $config->getCertPath(),
+            $config->getPrivateKeyPath(),
+            $config->getPrivateKeyPassword(),
+            $config->getTmpPath()
+        );
+    }
+
+    /**
+     * @param SignerInterface $signer
+     */
+    public function setSigner(SignerInterface $signer): void
+    {
+        $this->signer = $signer;
     }
 
     /**
@@ -63,11 +84,7 @@ class OpenId
             . $this->config->getClientId()
             . $state;
 
-        $clientSecret = $this->signPKCS7($message);
-
-        if ($clientSecret === false) {
-            return false;
-        }
+        $clientSecret = $this->signer->sign($message);
 
         $url = $this->getCodeUrl() . '?%s';
 
@@ -92,7 +109,6 @@ class OpenId
      *
      * @param string $code
      * @return string
-     * @throws RequestFailException
      * @throws SignFailException
      * @throws AbstractEsiaException
      */
@@ -101,16 +117,12 @@ class OpenId
         $timestamp = $this->getTimeStamp();
         $state = $this->buildState();
 
-        $clientSecret = $this->signPKCS7(
+        $clientSecret = $this->signer->sign(
             $this->config->getScope()
             . $timestamp
             . $this->config->getClientId()
             . $state
         );
-
-        if ($clientSecret === false) {
-            throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
-        }
 
         $body = [
             'client_id' => $this->config->getClientId(),
@@ -147,73 +159,6 @@ class OpenId
         $this->config->setOid($payload['urn:esia:sbj_id']);
 
         return $token;
-    }
-
-
-    /**
-     * Algorithm for singing message which
-     * will be send in client_secret param
-     *
-     * @param string $message
-     * @return string
-     * @throws SignFailException
-     */
-    public function signPKCS7($message): string
-    {
-        $this->checkFilesExists();
-
-        $certContent = file_get_contents($this->config->getCertPath());
-        $keyContent = file_get_contents($this->config->getPrivateKeyPath());
-
-        $cert = openssl_x509_read($certContent);
-
-        if ($cert === false) {
-            throw new SignFailException(SignFailException::CODE_CANT_READ_CERT);
-        }
-
-        $this->logger->debug('Cert: ' . print_r($cert, true), ['cert' => $cert]);
-
-        $privateKey = openssl_pkey_get_private($keyContent, $this->config->getPrivateKeyPassword());
-
-        if ($privateKey === false) {
-            throw new SignFailException(SignFailException::CODE_CANT_READ_PRIVATE_KEY);
-        }
-
-        $this->logger->debug('Private key: : ' . print_r($privateKey, true), ['privateKey' => $privateKey]);
-
-        // random unique directories for sign
-        $messageFile = $this->config->getTmpPath() . DIRECTORY_SEPARATOR . $this->getRandomString();
-        $signFile = $this->config->getTmpPath() . DIRECTORY_SEPARATOR . $this->getRandomString();
-        file_put_contents($messageFile, $message);
-
-        $signResult = openssl_pkcs7_sign(
-            $messageFile,
-            $signFile,
-            $cert,
-            $privateKey,
-            []
-        );
-
-        if ($signResult) {
-            $this->logger->debug('Sign success');
-        } else {
-            $this->logger->error('Sign fail');
-            $this->logger->error('SSL error: ' . openssl_error_string());
-            throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
-        }
-
-        $signed = file_get_contents($signFile);
-
-        # split by section
-        $signed = explode("\n\n", $signed);
-
-        # get third section which contains sign and join into one line
-        $sign = str_replace("\n", '', $this->urlSafe($signed[3]));
-
-        unlink($signFile);
-        unlink($messageFile);
-
-        return $sign;
     }
 
     /**
@@ -322,22 +267,6 @@ class OpenId
     }
 
     /**
-     * @throws SignFailException
-     */
-    private function checkFilesExists(): void
-    {
-        if (!file_exists($this->config->getCertPath())) {
-            throw new SignFailException(SignFailException::CODE_NO_SUCH_CERT_FILE);
-        }
-        if (!file_exists($this->config->getPrivateKeyPath())) {
-            throw new SignFailException(SignFailException::CODE_NO_SUCH_KEY_FILE);
-        }
-        if (!file_exists($this->config->getTmpPath())) {
-            throw new SignFailException(SignFailException::CODE_NO_TEMP_DIRECTORY);
-        }
-    }
-
-    /**
      * @param RequestInterface $request
      * @return array
      * @throws AbstractEsiaException
@@ -440,32 +369,10 @@ class OpenId
      * @param string $string
      * @return string
      */
-    private function urlSafe($string): string
-    {
-        return rtrim(strtr(trim($string), '+/', '-_'), '=');
-    }
-
-
-    /**
-     * Url safe for base64
-     *
-     * @param string $string
-     * @return string
-     */
     private function base64UrlSafeDecode($string): string
     {
         $base64 = strtr($string, '-_', '+/');
 
         return base64_decode($base64);
-    }
-
-    /**
-     * Generate random unique string
-     *
-     * @return string
-     */
-    private function getRandomString(): string
-    {
-        return md5(uniqid(mt_rand(), true));
     }
 }
