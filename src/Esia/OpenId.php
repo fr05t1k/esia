@@ -5,6 +5,7 @@ namespace Esia;
 use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\ForbiddenException;
 use Esia\Exceptions\RequestFailException;
+use Esia\Signer\Exceptions\CannotGenerateRandomIntException;
 use Esia\Signer\Exceptions\SignFailException;
 use Esia\Http\GuzzleHttpClient;
 use Esia\Signer\SignerInterface;
@@ -359,7 +360,7 @@ class OpenId
                 random_int(0, 0xffff)
             );
         } catch (\Exception $e) {
-            throw new SignFailException(SignFailException::CODE_CANNOT_GENERATE_RANDOM_INT);
+            throw new CannotGenerateRandomIntException('Cannot generate random integer', $e);
         }
     }
 

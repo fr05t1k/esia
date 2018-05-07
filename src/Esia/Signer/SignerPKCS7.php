@@ -2,6 +2,11 @@
 
 namespace Esia\Signer;
 
+use Esia\Signer\Exceptions\CannotReadCertificateException;
+use Esia\Signer\Exceptions\CannotReadPrivateKeyException;
+use Esia\Signer\Exceptions\NoSuchCertificateFileException;
+use Esia\Signer\Exceptions\NoSuchKeyFileException;
+use Esia\Signer\Exceptions\NoSuchTmpDirException;
 use Esia\Signer\Exceptions\SignFailException;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
@@ -48,7 +53,7 @@ class SignerPKCS7 implements SignerInterface
     public function __construct(
         string $certPath,
         string $privateKeyPath,
-        string $privateKeyPassword,
+        ?string $privateKeyPassword,
         string $tmpPath
     ) {
         $this->certPath = $certPath;
@@ -73,7 +78,7 @@ class SignerPKCS7 implements SignerInterface
         $cert = openssl_x509_read($certContent);
 
         if ($cert === false) {
-            throw new SignFailException(SignFailException::CODE_CANT_READ_CERT);
+            throw new CannotReadCertificateException('Cannot read the certificate');
         }
 
         $this->logger->debug('Cert: ' . print_r($cert, true), ['cert' => $cert]);
@@ -81,7 +86,7 @@ class SignerPKCS7 implements SignerInterface
         $privateKey = openssl_pkey_get_private($keyContent, $this->privateKeyPassword);
 
         if ($privateKey === false) {
-            throw new SignFailException(SignFailException::CODE_CANT_READ_PRIVATE_KEY);
+            throw new CannotReadCertificateException();
         }
 
         $this->logger->debug('Private key: : ' . print_r($privateKey, true), ['privateKey' => $privateKey]);
@@ -104,7 +109,7 @@ class SignerPKCS7 implements SignerInterface
         } else {
             $this->logger->error('Sign fail');
             $this->logger->error('SSL error: ' . openssl_error_string());
-            throw new SignFailException(SignFailException::CODE_SIGN_FAIL);
+            throw new SignFailException('Cannot sign the message');
         }
 
         $signed = file_get_contents($signFile);
@@ -127,13 +132,22 @@ class SignerPKCS7 implements SignerInterface
     private function checkFilesExists(): void
     {
         if (!file_exists($this->certPath)) {
-            throw new SignFailException(SignFailException::CODE_NO_SUCH_CERT_FILE);
+            throw new NoSuchCertificateFileException('Certificate does not exist');
+        }
+        if (!is_readable($this->certPath)) {
+            throw new CannotReadCertificateException('Cannot read the certificate');
         }
         if (!file_exists($this->privateKeyPath)) {
-            throw new SignFailException(SignFailException::CODE_NO_SUCH_KEY_FILE);
+            throw new NoSuchKeyFileException('Private key does not exist');
+        }
+        if (!is_readable($this->privateKeyPath)) {
+            throw new CannotReadPrivateKeyException('Cannot read the private key');
         }
         if (!file_exists($this->tmpPath)) {
-            throw new SignFailException(SignFailException::CODE_NO_TEMP_DIRECTORY);
+            throw new NoSuchTmpDirException('Temporary folder is not found');
+        }
+        if (!is_writable($this->tmpPath)) {
+            throw new NoSuchTmpDirException('Temporary folder is not writable');
         }
     }
 
