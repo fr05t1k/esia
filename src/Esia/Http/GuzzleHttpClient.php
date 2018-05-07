@@ -1,8 +1,10 @@
 <?php
 
-namespace Esia;
+namespace Esia\Http;
 
+use Esia\Http\Exceptions\HttpException;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -42,10 +44,13 @@ class GuzzleHttpClient implements ClientInterface
      * @return ResponseInterface
      *
      * @throws \Psr\Http\Client\ClientException If an error happens during processing the request.
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
-        return $this->guzzle->send($request);
+        try {
+            return $this->guzzle->send($request);
+        } catch (GuzzleException $e) {
+            throw new HttpException($e->getMessage(), $e->getCode(), $e);
+        }
     }
 }

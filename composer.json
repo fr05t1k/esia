@@ -12,6 +12,11 @@
       "Esia\\": "src/Esia"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "tests\\" : "tests/unit"
+    }
+  },
   "require": {
     "guzzlehttp/guzzle": "^6.1.0",
     "psr/log": "^1.0",
@@ -20,6 +25,6 @@
   },
   "require-dev": {
     "roave/security-advisories": "dev-master",
-    "codeception/codeception": "^2.3"
+    "codeception/codeception": "^2.4"
   }
 }

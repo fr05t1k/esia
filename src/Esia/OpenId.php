@@ -6,10 +6,11 @@ use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\ForbiddenException;
 use Esia\Exceptions\RequestFailException;
 use Esia\Exceptions\SignFailException;
+use Esia\Http\GuzzleHttpClient;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
+use Psr\Http\Client\ClientException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -363,13 +364,16 @@ class OpenId
             return $responseBody;
         } catch (ClientException $e) {
             $this->logger->error('Request was failed', ['exception' => $e]);
-            if ($e->getResponse() !== null && $e->getResponse()->getStatusCode() === 403) {
+            $prev = $e->getPrevious();
+
+            // Only for Guzzle
+            if ($prev instanceof BadResponseException
+                && $prev->getResponse() !== null
+                && $prev->getResponse()->getStatusCode() === 403
+            ) {
                 throw new ForbiddenException(0, $e);
             }
 
-            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
-        } catch (GuzzleException $e) {
-            $this->logger->error('Request was failed', ['exception' => $e]);
             throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
         } catch (\RuntimeException $e) {
             $this->logger->error('Cannot read body', ['exception' => $e]);
