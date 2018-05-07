@@ -7,10 +7,10 @@ use Esia\Exceptions\ForbiddenException;
 use Esia\Exceptions\RequestFailException;
 use Esia\Exceptions\SignFailException;
 use GuzzleHttp\Client;
-use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Request;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
@@ -36,10 +36,10 @@ class OpenId
      */
     private $config;
 
-    public function __construct(Config $config, Client $client = null)
+    public function __construct(Config $config, ClientInterface $client = null)
     {
         $this->config = $config;
-        $this->client = $client ?? new Client();
+        $this->client = $client ?? new GuzzleHttpClient(new Client());
         $this->logger = new NullLogger();
     }
 
@@ -347,7 +347,7 @@ class OpenId
             if ($this->config->getToken()) {
                 $request = $request->withHeader('Authorization', 'Bearer ' . $this->config->getToken());
             }
-            $response = $this->client->send($request);
+            $response = $this->client->sendRequest($request);
             $responseBody = json_decode($response->getBody()->getContents(), true);
 
             if (!is_array($responseBody)) {
