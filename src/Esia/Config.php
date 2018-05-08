@@ -2,196 +2,174 @@
 
 namespace Esia;
 
+use Esia\Exceptions\InvalidConfigurationException;
+
 class Config
 {
-
     private $clientId;
     private $redirectUrl;
+    private $privateKeyPath;
+    private $certPath;
+
     private $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
     private $tokenUrl = 'aas/oauth2/te';
     private $codeUrl = 'aas/oauth2/ac';
     private $personUrl = 'rs/prns';
-    private $privateKeyPath;
-    private $privateKeyPassword;
-    private $certPath;
-    private $oid = '';
-
-    private $scope = 'fullname birthdate gender email mobile id_doc snils inn';
-
-    private $clientSecret = null;
-    private $responseType = 'code';
-    private $state = null;
-    private $timestamp = null;
-    private $accessType = 'offline';
-    private $tmpPath;
-
-    private $token = null;
-
-    public function __construct(array $config = [])
-    {
-        foreach ($config as $k => $v) {
-            if (property_exists($this, $k)) {
-                $this->$k = $v;
-            }
-        }
-    }
+    private $privateKeyPassword = '';
 
     /**
-     * @return string
+     * @var string[]
      */
+    private $scope = [
+        'fullname',
+        'birthdate',
+        'gender',
+        'email',
+        'mobile',
+        'id_doc',
+        'snils',
+        'inn',
+    ];
+
+    private $tmpPath = '/var/tmp';
+
+    private $responseType = 'code';
+    private $accessType = 'offline';
+
+    private $token = '';
+    private $oid = '';
+
+    /**
+     * Config constructor.
+     *
+     * @param array $config
+     * @throws InvalidConfigurationException
+     */
+    public function __construct(array $config = [])
+    {
+        // Required params
+        $this->clientId = $config['clientId'] ?? $this->clientId;
+        if (!$this->clientId) {
+            throw new InvalidConfigurationException('Please provide clientId');
+        }
+
+        $this->redirectUrl = $config['redirectUrl'] ?? $this->redirectUrl;
+        if (!$this->redirectUrl) {
+            throw new InvalidConfigurationException('Please provide redirectUrl');
+        }
+
+        $this->privateKeyPath = $config['privateKeyPath'] ?? $this->privateKeyPath;
+        if (!$this->privateKeyPath) {
+            throw new InvalidConfigurationException('Please provide privateKeyPath');
+        }
+        $this->certPath = $config['certPath'] ?? $this->certPath;
+        if (!$this->certPath) {
+            throw new InvalidConfigurationException('Please provide certPath');
+        }
+
+        $this->portalUrl = $config['portalUrl'] ?? $this->portalUrl;
+        $this->tokenUrl = $config['tokenUrl'] ?? $this->tokenUrl;
+        $this->codeUrl = $config['codeUrl'] ?? $this->codeUrl;
+        $this->personUrl = $config['personUrl'] ?? $this->personUrl;
+        $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
+        $this->oid = $config['oid'] ?? $this->oid;
+        $this->scope = $config['scope'] ?? $this->scope;
+        if (!is_array($this->scope)) {
+            throw new InvalidConfigurationException('scope must be array of strings');
+        }
+
+        $this->responseType = $config['responseType'] ?? $this->responseType;
+        $this->accessType = $config['accessType'] ?? $this->accessType;
+        $this->tmpPath = $config['tmpPath'] ?? $this->tmpPath;
+        $this->token = $config['token'] ?? $this->token;
+    }
+
     public function getPortalUrl(): string
     {
         return $this->portalUrl;
     }
 
-    /**
-     * @return string
-     */
     public function getTokenUrl(): string
     {
         return $this->tokenUrl;
     }
 
-    /**
-     * @return string
-     */
     public function getCodeUrl(): string
     {
         return $this->codeUrl;
     }
 
-    /**
-     * @return string
-     */
     public function getPersonUrl(): string
     {
         return $this->personUrl;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getPrivateKeyPath()
+    public function getPrivateKeyPath(): string
     {
         return $this->privateKeyPath;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getPrivateKeyPassword()
+    public function getPrivateKeyPassword(): string
     {
         return $this->privateKeyPassword;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getCertPath()
+    public function getCertPath(): string
     {
         return $this->certPath;
     }
 
-    /**
-     * @return string
-     */
     public function getOid(): string
     {
         return $this->oid;
     }
 
-    /**
-     * @param string $oid
-     */
     public function setOid(string $oid): void
     {
         $this->oid = $oid;
     }
 
-    /**
-     * @return string
-     */
-    public function getScope(): string
+    public function getScope(): array
     {
         return $this->scope;
     }
 
-    /**
-     * @return null
-     */
-    public function getClientSecret()
+    public function getScopeString(): string
     {
-        return $this->clientSecret;
+        return implode(' ', $this->scope);
     }
 
-    /**
-     * @return string
-     */
     public function getResponseType(): string
     {
         return $this->responseType;
     }
 
-    /**
-     * @return null
-     */
-    public function getState()
-    {
-        return $this->state;
-    }
-
-    /**
-     * @return null
-     */
-    public function getTimestamp()
-    {
-        return $this->timestamp;
-    }
-
-    /**
-     * @return string
-     */
     public function getAccessType(): string
     {
         return $this->accessType;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getTmpPath()
+    public function getTmpPath(): string
     {
         return $this->tmpPath;
     }
 
-    /**
-     * @return null|string
-     */
     public function getToken(): ?string
     {
         return $this->token;
     }
 
-    /**
-     * @param string $token
-     */
     public function setToken(string $token): void
     {
         $this->token = $token;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getClientId()
+    public function getClientId(): string
     {
         return $this->clientId;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getRedirectUrl()
+    public function getRedirectUrl(): string
     {
         return $this->redirectUrl;
     }

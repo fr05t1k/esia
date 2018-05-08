@@ -3,16 +3,21 @@ namespace tests\unit;
 
 use Codeception\Test\Unit;
 use Codeception\Util\Stub;
+use Esia\Config;
 use Esia\Exceptions\RequestFailException;
 use Esia\Signer\Exceptions\SignFailException;
 use Esia\OpenId;
-use Esia\Request;
 
 class OpenIdTest extends Unit
 {
     public $config;
 
-    public function __construct($name = null, array $data = array(), $dataName = '')
+    /**
+     * @var OpenId
+     */
+    public $openId;
+
+    public function setUp()
     {
         $this->config = [
             'clientId' => 'INSP03211',
@@ -24,35 +29,9 @@ class OpenIdTest extends Unit
             'tmpPath' => __DIR__ . '/../tmp',
         ];
 
-        // define function for push them from global namespace
-        test::func('esia', 'curl_init', false);
-        test::func('esia', 'curl_exec', false);
-        test::func('esia', 'openssl_pkcs7_sign', false);
-        test::func('esia', 'openssl_pkey_get_private', false);
-        test::func('esia', 'openssl_x509_read', false);
-        test::clean();
+        $config = new Config($this->config);
 
-        parent::__construct($name, $data, $dataName);
-    }
-
-
-    /**
-     * @var OpenId
-     */
-    public $openId;
-
-    public function testGetPersonUrl()
-    {
-        $personUrl = $this->openId->getPersonUrl();
-
-        $this->assertNotFalse(filter_var($personUrl, FILTER_VALIDATE_URL));
-
-        $domain = 'http://google.com';
-        $query = '?tokenUrl';
-        $this->openId->portalUrl = $domain;
-        $this->openId->personUrl = $query;
-
-        $this->assertEquals($domain . $query, $this->openId->getPersonUrl());
+        $this->openId = new OpenId($config);
     }
 
     public function testGetToken()

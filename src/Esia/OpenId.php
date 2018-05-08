@@ -80,7 +80,7 @@ class OpenId
     {
         $timestamp = $this->getTimeStamp();
         $state = $this->buildState();
-        $message = $this->config->getScope()
+        $message = $this->config->getScopeString()
             . $timestamp
             . $this->config->getClientId()
             . $state;
@@ -93,7 +93,7 @@ class OpenId
             'client_id' => $this->config->getClientId(),
             'client_secret' => $clientSecret,
             'redirect_uri' => $this->config->getRedirectUrl(),
-            'scope' => $this->config->getScope(),
+            'scope' => $this->config->getScopeString(),
             'response_type' => $this->config->getResponseType(),
             'state' => $state,
             'access_type' => $this->config->getAccessType(),
@@ -119,7 +119,7 @@ class OpenId
         $state = $this->buildState();
 
         $clientSecret = $this->signer->sign(
-            $this->config->getScope()
+            $this->config->getScopeString()
             . $timestamp
             . $this->config->getClientId()
             . $state
@@ -132,7 +132,7 @@ class OpenId
             'client_secret' => $clientSecret,
             'state' => $state,
             'redirect_uri' => $this->config->getRedirectUrl(),
-            'scope' => $this->config->getScope(),
+            'scope' => $this->config->getScopeString(),
             'timestamp' => $timestamp,
             'token_type' => 'Bearer',
             'refresh_token' => $state,
@@ -301,16 +301,16 @@ class OpenId
                 && $prev->getResponse() !== null
                 && $prev->getResponse()->getStatusCode() === 403
             ) {
-                throw new ForbiddenException(0, $e);
+                throw new ForbiddenException('Request is forbidden', 0, $e);
             }
 
-            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
+            throw new RequestFailException('Request is failed', 0, $e);
         } catch (\RuntimeException $e) {
             $this->logger->error('Cannot read body', ['exception' => $e]);
-            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
+            throw new RequestFailException('Cannot read body', 0, $e);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error('Wrong header', ['exception' => $e]);
-            throw new RequestFailException(RequestFailException::CODE_REQUEST_FAILED, $e);
+            throw new RequestFailException('Wrong header', 0, $e);
         }
     }
 
