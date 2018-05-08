@@ -1,4 +1,7 @@
 .idea
 tests/tmp/*
 tests/_output/*
+public/*
 vendor
+
+tests/_data/non_readable_file
