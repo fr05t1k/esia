@@ -23,17 +23,16 @@ composer require --prefer-dist fr05t1k/esia
 Пример получения ссылки для авторизации
 ```php
 <?php 
-$config = [
-   'clientId' => 'INSP03211',
-   'redirectUrl' => 'http://my-site.com/response.php',
-   'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
-   'privateKeyPath' => 'my-site.com.pem',
-   'privateKeyPassword' => 'my-site.com',
-   'certPath' => 'my-site.com.pem',
-   'tmpPath' => 'tmp',
-   'scope' => ['fullname', 'birthdate'],
-];
-$config = new \Esia\Config($config);
+$config = new \Esia\Config([
+  'clientId' => 'INSP03211',
+  'redirectUrl' => 'http://my-site.com/response.php',
+  'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
+  'privateKeyPath' => 'my-site.com.pem',
+  'privateKeyPassword' => 'my-site.com',
+  'certPath' => 'my-site.com.pem',
+  'tmpPath' => 'tmp',
+  'scope' => ['fullname', 'birthdate'],
+]);
 $esia = new \Esia\OpenId($config);
 ?>
 
