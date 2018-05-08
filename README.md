@@ -68,7 +68,7 @@ $documentInfo = $esia->getDocInfo();
 
 `tokenUrlPath` - по умолчанию: `aas/oauth2/te`. URL для получение токена.
 
-`scope` - по умолчанию: `http://esia.gosuslugi.ru/usr_inf`. Запрашиваемые права у пользователя.
+`scope` - по умолчанию: `fullname birthdate gender email mobile id_doc snils inn`. Запрашиваемые права у пользователя.
 
 `privateKeyPath` - путь до приватного ключа.
 
