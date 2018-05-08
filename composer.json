@@ -14,10 +14,11 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "tests\\" : "tests/unit"
+      "tests\\" : "tests"
     }
   },
   "require": {
+    "php": "^7.1",
     "guzzlehttp/guzzle": "^6.1.0",
     "psr/log": "^1.0",
     "psr/http-message": "^1.0",
