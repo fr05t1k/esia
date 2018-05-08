@@ -67,6 +67,16 @@ class OpenId
     }
 
     /**
+     * Get config
+     *
+     * @return Config
+     */
+    public function getConfig(): Config
+    {
+        return $this->config;
+    }
+
+    /**
      * Return an url for authentication
      *
      * ```php
@@ -207,8 +217,9 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @throws \Exception
      * @return array
+     * @throws Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
      */
     public function getAddressInfo(): array
     {
@@ -228,8 +239,9 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @throws \Exception
      * @return array
+     * @throws Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
      */
     public function getDocInfo(): array
     {
