@@ -15,13 +15,13 @@ composer require --prefer-dist fr05t1k/esia
 Или добавьте в composer.json
 
 ```
-"fr05t1k/esia" : "dev-master"
+"fr05t1k/esia" : "^2.0"
 ```
 
 # Как использовать 
 
 Пример получения ссылки для авторизации
-```
+```php
 <?php 
 $config = [
    'clientId' => 'INSP03211',
@@ -31,9 +31,10 @@ $config = [
    'privateKeyPassword' => 'my-site.com',
    'certPath' => 'my-site.com.pem',
    'tmpPath' => 'tmp',
+   'scope' => ['fullname', 'birthdate'],
 ];
-
-$esia = new \esia\OpenId($config);
+$config = new \Esia\Config($config);
+$esia = new \Esia\OpenId($config);
 ?>
 
 <a href="<?=$esia->buildUrl()?>">Войти через портал госуслуги</a>
@@ -45,9 +46,10 @@ $esia = new \esia\OpenId($config);
 
 ```
 
-$esia = new \esia\OpenId($config);
+$esia = new \Esia\OpenId($config);
 
-$esia->getToken($_GET['code']);
+// Вы можете использовать токен в дальнейшем вместе с oid 
+$token = $esia->getToken($_GET['code']);
 
 $personInfo = $esia->getPersonInfo();
 $addressInfo = $esia->getAddressInfo();
@@ -77,4 +79,23 @@ $documentInfo = $esia->getDocInfo();
 
 `tmpPath` - путь до дериктории где будет проходить подпись (должна быть доступна для записи).
 
-`log` - callable с одни параметром $message, в который будет передаваться сообщения лога.
+# Токен и oid
+
+Токен - jwt токен которые вы получаете от ЕСИА для дальнейшего взаимодействия
+oid - уникальный идентификатор владельца токена
+
+## Как получить oid?
+Если 2 способа:
+1. oid содержится в jwt токене, расшифровав его
+2. После получения токена oid сохраняется в config и получить можно так 
+```php
+$esia->getConfig()->getOid();
+```
+
+## Переиспользование Токен
+
+Дополнительно укажите токен и идентификатор в конфиге
+```php
+$config->setToken($jwt);
+$config->setOid($oid);
+```
