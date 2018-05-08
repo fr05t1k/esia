@@ -87,7 +87,7 @@ class OpenId
 
         $clientSecret = $this->signer->sign($message);
 
-        $url = $this->getCodeUrl() . '?%s';
+        $url = $this->config->getCodeUrl() . '?%s';
 
         $params = [
             'client_id' => $this->config->getClientId(),
@@ -141,7 +141,7 @@ class OpenId
         $payload = $this->sendRequest(
             new Request(
                 'POST',
-                $this->getTokenUrl(),
+                $this->config->getTokenUrl(),
                 [
                     'Content-Type' => 'application/x-www-form-urlencoded',
                 ],
@@ -168,12 +168,12 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @throws \Exception
      * @return null|array
+     * @throws AbstractEsiaException
      */
     public function getPersonInfo(): array
     {
-        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid();
+        $url = $this->config->getPersonUrl();
 
         return $this->sendRequest(new Request('GET', $url));
     }
@@ -184,12 +184,13 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @throws \Exception
      * @return array
+     * @throws Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
      */
     public function getContactInfo(): array
     {
-        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/ctts';
+        $url = $this->config->getPersonUrl() . '/ctts';
         $payload = $this->sendRequest(new Request('GET', $url));
 
         if ($payload && $payload['size'] > 0) {
@@ -211,7 +212,7 @@ class OpenId
      */
     public function getAddressInfo(): array
     {
-        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/addrs';
+        $url = $this->config->getPersonUrl() . '/addrs';
         $payload = $this->sendRequest(new Request('GET', $url));
 
         if ($payload['size'] > 0) {
@@ -232,7 +233,7 @@ class OpenId
      */
     public function getDocInfo(): array
     {
-        $url = $this->config->getPortalUrl() . $this->config->getPersonUrl() . '/' . $this->config->getOid() . '/docs';
+        $url = $this->config->getPersonUrl() . '/docs';
 
         $payload = $this->sendRequest(new Request('GET', $url));
 
@@ -250,7 +251,7 @@ class OpenId
      *
      * @param $elements array of urls
      * @return array
-     * @throws \Exception
+     * @throws AbstractEsiaException
      */
     private function collectArrayElements($elements): array
     {
@@ -312,22 +313,6 @@ class OpenId
             $this->logger->error('Wrong header', ['exception' => $e]);
             throw new RequestFailException('Wrong header', 0, $e);
         }
-    }
-
-    /**
-     * Return an url for request to get an access token
-     */
-    private function getTokenUrl(): string
-    {
-        return $this->config->getPortalUrl() . $this->config->getTokenUrl();
-    }
-
-    /**
-     * Return an url for request to get an authorization code
-     */
-    private function getCodeUrl(): string
-    {
-        return $this->config->getPortalUrl() . $this->config->getCodeUrl();
     }
 
     /**

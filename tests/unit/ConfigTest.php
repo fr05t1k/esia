@@ -56,9 +56,9 @@ class ConfigTest extends Unit
                     'privateKeyPath' => '/tmp',
                     'certPath' => '/tmp',
                     'portalUrl' => 'google.com',
-                    'tokenUrl' => 'test',
-                    'codeUrl' => 'test',
-                    'personUrl' => 'test',
+                    'tokenUrlPath' => 'test',
+                    'codeUrlPath' => 'test',
+                    'personUrlPath' => 'test',
                     'privateKeyPassword' => 'test',
                     'oid' => 'test',
                     'responseType' => 'test',
@@ -131,5 +131,78 @@ class ConfigTest extends Unit
         }
 
         new Config($config);
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public function testGetTokenUrl(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+            'portalUrl' => 'https://google.com/',
+            'tokenUrlPath' => 'test',
+            'scope' => ['test', 'test2', 'test3'],
+        ]);
+
+        $this->assertSame('https://google.com/test', $config->getTokenUrl());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public function testGetCodeUrl(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+            'portalUrl' => 'https://google.com/',
+            'codeUrlPath' => 'test',
+            'scope' => ['test', 'test2', 'test3'],
+        ]);
+
+        $this->assertSame('https://google.com/test', $config->getCodeUrl());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public function testGetPersonUrl(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+            'portalUrl' => 'https://google.com/',
+            'personUrlPath' => 'test',
+            'oid' => 'test',
+            'scope' => ['test', 'test2', 'test3'],
+        ]);
+
+        $this->assertSame('https://google.com/test/test', $config->getPersonUrl());
+    }
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public function testGetPersonUrlWithoutOid(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+            'portalUrl' => 'https://google.com/',
+            'personUrlPath' => 'test',
+            'scope' => ['test', 'test2', 'test3'],
+        ]);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $this->assertSame('https://google.com/test/test', $config->getPersonUrl());
     }
 }

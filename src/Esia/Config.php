@@ -12,9 +12,9 @@ class Config
     private $certPath;
 
     private $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
-    private $tokenUrl = 'aas/oauth2/te';
-    private $codeUrl = 'aas/oauth2/ac';
-    private $personUrl = 'rs/prns';
+    private $tokenUrlPath = 'aas/oauth2/te';
+    private $codeUrlPath = 'aas/oauth2/ac';
+    private $personUrlPath = 'rs/prns';
     private $privateKeyPassword = '';
 
     /**
@@ -68,9 +68,9 @@ class Config
         }
 
         $this->portalUrl = $config['portalUrl'] ?? $this->portalUrl;
-        $this->tokenUrl = $config['tokenUrl'] ?? $this->tokenUrl;
-        $this->codeUrl = $config['codeUrl'] ?? $this->codeUrl;
-        $this->personUrl = $config['personUrl'] ?? $this->personUrl;
+        $this->tokenUrlPath = $config['tokenUrlPath'] ?? $this->tokenUrlPath;
+        $this->codeUrlPath = $config['codeUrlPath'] ?? $this->codeUrlPath;
+        $this->personUrlPath = $config['personUrlPath'] ?? $this->personUrlPath;
         $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
         $this->oid = $config['oid'] ?? $this->oid;
         $this->scope = $config['scope'] ?? $this->scope;
@@ -87,21 +87,6 @@ class Config
     public function getPortalUrl(): string
     {
         return $this->portalUrl;
-    }
-
-    public function getTokenUrl(): string
-    {
-        return $this->tokenUrl;
-    }
-
-    public function getCodeUrl(): string
-    {
-        return $this->codeUrl;
-    }
-
-    public function getPersonUrl(): string
-    {
-        return $this->personUrl;
     }
 
     public function getPrivateKeyPath(): string
@@ -172,5 +157,33 @@ class Config
     public function getRedirectUrl(): string
     {
         return $this->redirectUrl;
+    }
+
+    /**
+     * Return an url for request to get an access token
+     */
+    public function getTokenUrl(): string
+    {
+        return $this->portalUrl . $this->tokenUrlPath;
+    }
+
+    /**
+     * Return an url for request to get an authorization code
+     */
+    public function getCodeUrl(): string
+    {
+        return $this->portalUrl . $this->codeUrlPath;
+    }
+
+    /**
+     * @return string
+     * @throws InvalidConfigurationException
+     */
+    public function getPersonUrl(): string
+    {
+        if (!$this->oid) {
+            throw new InvalidConfigurationException('Please provide oid');
+        }
+        return $this->portalUrl . $this->personUrlPath . '/' . $this->oid;
     }
 }

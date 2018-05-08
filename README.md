@@ -63,9 +63,9 @@ $documentInfo = $esia->getDocInfo();
 
 `portalUrl` - по умолчанию: `https://esia-portal1.test.gosuslugi.ru/`. Домен портала для авторизация (только домен).
 
-`codeUrl` - по умолчанию: `aas/oauth2/ac`. URL для получения кода.
+`codeUrlPath` - по умолчанию: `aas/oauth2/ac`. URL для получения кода.
 
-`tokenUrl` - по умолчанию: `aas/oauth2/te`. URL для получение токена.
+`tokenUrlPath` - по умолчанию: `aas/oauth2/te`. URL для получение токена.
 
 `scope` - по умолчанию: `http://esia.gosuslugi.ru/usr_inf`. Запрашиваемые права у пользователя.
 

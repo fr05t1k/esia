@@ -224,7 +224,7 @@ class OpenIdTest extends Unit
         $this->assertNotFalse(filter_var($tokenUrl, FILTER_VALIDATE_URL));
 
         $domain = 'http://google.com';
-        $query = '?tokenUrl';
+        $query = '?tokenUrlPath';
         $this->openId->portalUrl = $domain;
         $this->openId->tokenUrl = $query;
 
