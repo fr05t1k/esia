@@ -31,10 +31,10 @@ class OpenIdTest extends Unit
             'clientId' => 'INSP03211',
             'redirectUrl' => 'http://my-site.com/response.php',
             'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
-            'privateKeyPath' => __DIR__ . '/../_data/server.key',
+            'privateKeyPath' => codecept_data_dir('server.key'),
             'privateKeyPassword' => 'test',
-            'certPath' => __DIR__ . '/../_data/server.crt',
-            'tmpPath' => __DIR__ . '/../tmp',
+            'certPath' => codecept_data_dir('server.crt'),
+            'tmpPath' => codecept_log_dir(),
         ];
 
         $config = new Config($this->config);
