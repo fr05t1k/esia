@@ -50,7 +50,8 @@ class OpenId
         $this->config = $config;
         $this->client = $client ?? new GuzzleHttpClient(new Client());
         $this->logger = new NullLogger();
-        $this->signer = new SignerPKCS7(
+        $cls = $config->getSignerClass();
+        $this->signer = new $cls(
             $config->getCertPath(),
             $config->getPrivateKeyPath(),
             $config->getPrivateKeyPassword(),

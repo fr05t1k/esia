@@ -20,28 +20,28 @@ class SignerPKCS7 implements SignerInterface
      *
      * @var string
      */
-    private $certPath;
+    protected $certPath;
 
     /**
      * Path to the private key
      *
      * @var string
      */
-    private $privateKeyPath;
+    protected $privateKeyPath;
 
     /**
      * Password for the private key
      *
      * @var string
      */
-    private $privateKeyPassword;
+    protected $privateKeyPassword;
 
     /**
      * Temporary directory for message signing (must me writable)
      *
      * @var string
      */
-    private $tmpPath;
+    protected $tmpPath;
 
     /**
      * SignerPKCS7 constructor.
@@ -129,7 +129,7 @@ class SignerPKCS7 implements SignerInterface
     /**
      * @throws SignFailException
      */
-    private function checkFilesExists(): void
+    protected function checkFilesExists(): void
     {
         if (!file_exists($this->certPath)) {
             throw new NoSuchCertificateFileException('Certificate does not exist');
@@ -156,7 +156,7 @@ class SignerPKCS7 implements SignerInterface
      *
      * @return string
      */
-    private function getRandomString(): string
+    protected function getRandomString(): string
     {
         return md5(uniqid(mt_rand(), true));
     }
@@ -167,7 +167,7 @@ class SignerPKCS7 implements SignerInterface
      * @param string $string
      * @return string
      */
-    private function urlSafe($string): string
+    protected function urlSafe($string): string
     {
         return rtrim(strtr(trim($string), '+/', '-_'), '=');
     }
