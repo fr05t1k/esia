@@ -27,13 +27,15 @@ $config = new \Esia\Config([
   'clientId' => 'INSP03211',
   'redirectUrl' => 'http://my-site.com/response.php',
   'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
-  'privateKeyPath' => 'my-site.com.pem',
-  'privateKeyPassword' => 'my-site.com',
-  'certPath' => 'my-site.com.pem',
-  'tmpPath' => 'tmp',
   'scope' => ['fullname', 'birthdate'],
 ]);
 $esia = new \Esia\OpenId($config);
+$esia->setSigner(new \Esia\Signer\SignerPKCS7(
+    'my-site.com.pem',
+    'my-site.com.pem',
+    'password',
+    '/tmp'
+));
 ?>
 
 <a href="<?=$esia->buildUrl()?>">Войти через портал госуслуги</a>
