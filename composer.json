@@ -24,6 +24,9 @@
     "psr/http-message": "^1.0",
     "psr/http-client": "^0.1"
   },
+  "suggest": {
+    "ext-openssl": "SignerPKCS7 support"
+  },
   "require-dev": {
     "roave/security-advisories": "dev-master",
     "codeception/codeception": "^2.4"

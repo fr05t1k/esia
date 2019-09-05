@@ -160,7 +160,7 @@ class OpenIdTest extends Unit
      * @param array $responses
      * @return ClientInterface
      */
-    private function buildClientWithResponses(array $responses): ClientInterface
+    protected function buildClientWithResponses(array $responses): ClientInterface
     {
         $mock = new MockHandler($responses);
 

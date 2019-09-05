@@ -103,7 +103,7 @@ class Config
     {
         return $this->certPath;
     }
-
+    
     public function getOid(): string
     {
         return $this->oid;
