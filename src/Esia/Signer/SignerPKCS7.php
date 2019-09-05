@@ -7,7 +7,7 @@ use Esia\Signer\Exceptions\SignFailException;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 
-class SignerPKCS7 extends SignerCommon implements SignerInterface 
+class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface 
 {
     use LoggerAwareTrait;
 
@@ -16,28 +16,28 @@ class SignerPKCS7 extends SignerCommon implements SignerInterface
      *
      * @var string
      */
-    protected $certPath;
+    private $certPath;
 
     /**
      * Path to the private key
      *
      * @var string
      */
-    protected $privateKeyPath;
+    private $privateKeyPath;
 
     /**
      * Password for the private key
      *
      * @var string
      */
-    protected $privateKeyPassword;
+    private $privateKeyPassword;
 
     /**
      * Temporary directory for message signing (must me writable)
      *
      * @var string
      */
-    protected $tmpPath;
+    private $tmpPath;
 
     /**
      * SignerPKCS7 constructor.

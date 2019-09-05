@@ -10,7 +10,7 @@ use Esia\Signer\Exceptions\NoSuchTmpDirException;
 use Esia\Signer\Exceptions\SignFailException;
 use Psr\Log\LoggerAwareTrait;
 
-class SignerCommon
+class AbstractSignerPKCS7
 {
     use LoggerAwareTrait;
 
