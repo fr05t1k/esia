@@ -10,14 +10,17 @@ use Esia\Signer\Exceptions\SignFailException;
 use Esia\Http\GuzzleHttpClient;
 use Esia\Signer\SignerInterface;
 use Esia\Signer\SignerPKCS7;
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
+use InvalidArgumentException;
 use Psr\Http\Client\ClientException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
  * Class OpenId
@@ -59,6 +62,8 @@ class OpenId
     }
 
     /**
+     * Replace default signer
+     *
      * @param SignerInterface $signer
      */
     public function setSigner(SignerInterface $signer): void
@@ -295,7 +300,7 @@ class OpenId
             $responseBody = json_decode($response->getBody()->getContents(), true);
 
             if (!is_array($responseBody)) {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     sprintf(
                         'Cannot decode response body. JSON error (%d): %s',
                         json_last_error(),
@@ -318,10 +323,10 @@ class OpenId
             }
 
             throw new RequestFailException('Request is failed', 0, $e);
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             $this->logger->error('Cannot read body', ['exception' => $e]);
             throw new RequestFailException('Cannot read body', 0, $e);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             $this->logger->error('Wrong header', ['exception' => $e]);
             throw new RequestFailException('Wrong header', 0, $e);
         }
@@ -356,7 +361,7 @@ class OpenId
                 random_int(0, 0xffff),
                 random_int(0, 0xffff)
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw new CannotGenerateRandomIntException('Cannot generate random integer', $e);
         }
     }

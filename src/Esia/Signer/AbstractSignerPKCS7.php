@@ -9,8 +9,9 @@ use Esia\Signer\Exceptions\NoSuchKeyFileException;
 use Esia\Signer\Exceptions\NoSuchTmpDirException;
 use Esia\Signer\Exceptions\SignFailException;
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 
-class AbstractSignerPKCS7
+abstract class AbstractSignerPKCS7
 {
     use LoggerAwareTrait;
 
@@ -22,18 +23,38 @@ class AbstractSignerPKCS7
     protected $certPath;
 
     /**
-     * Path to the protected key
+     * Path to the private key
      *
      * @var string
      */
-    protected $protectedKeyPath;
+    protected $privateKeyPath;
 
     /**
-     * Password for the protected key
+     * Password for the private key
      *
      * @var string
      */
-    protected $protectedKeyPassword;
+    protected $privateKeyPassword;
+
+    /**
+     * SignerPKCS7 constructor.
+     * @param string $certPath
+     * @param string $privateKeyPath
+     * @param string $privateKeyPassword
+     * @param string $tmpPath
+     */
+    public function __construct(
+        string $certPath,
+        string $privateKeyPath,
+        ?string $privateKeyPassword,
+        string $tmpPath
+    ) {
+        $this->certPath = $certPath;
+        $this->privateKeyPath = $privateKeyPath;
+        $this->privateKeyPassword = $privateKeyPassword;
+        $this->tmpPath = $tmpPath;
+        $this->logger = new NullLogger();
+    }
 
     /**
      * Temporary directory for message signing (must me writable)

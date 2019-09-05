@@ -5,31 +5,10 @@ namespace Esia\Signer;
 use Esia\Signer\Exceptions\CannotReadCertificateException;
 use Esia\Signer\Exceptions\SignFailException;
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\NullLogger;
 
-class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface 
+class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
 {
     use LoggerAwareTrait;
-
-    /**
-     * SignerPKCS7 constructor.
-     * @param string $certPath
-     * @param string $privateKeyPath
-     * @param string $privateKeyPassword
-     * @param string $tmpPath
-     */
-    public function __construct(
-        string $certPath,
-        string $privateKeyPath,
-        ?string $privateKeyPassword,
-        string $tmpPath
-    ) {
-        $this->certPath = $certPath;
-        $this->privateKeyPath = $privateKeyPath;
-        $this->privateKeyPassword = $privateKeyPassword;
-        $this->tmpPath = $tmpPath;
-        $this->logger = new NullLogger();
-    }
 
     /**
      * @param string $message
