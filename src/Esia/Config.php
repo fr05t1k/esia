@@ -3,16 +3,12 @@
 namespace Esia;
 
 use Esia\Exceptions\InvalidConfigurationException;
-use Esia\Signer\CliSignerPKCS7;
-use Esia\Signer\SignerInterface;
-use Esia\Signer\SignerPKCS7;
 
 class Config
 {
     private $clientId;
     private $redirectUrl;
     private $privateKeyPath;
-    private $signerClass;
     private $certPath;
 
     private $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
@@ -70,7 +66,6 @@ class Config
         if (!$this->certPath) {
             throw new InvalidConfigurationException('Please provide certPath');
         }
-        $this->signerClass = $config['signerClass'] ?? '\Esia\Signer\SignerPKCS7';
 
         $this->portalUrl = $config['portalUrl'] ?? $this->portalUrl;
         $this->tokenUrlPath = $config['tokenUrlPath'] ?? $this->tokenUrlPath;
@@ -109,11 +104,6 @@ class Config
         return $this->certPath;
     }
     
-    public function getSignerClass(): string
-    {
-        return $this->signerClass;
-    }
-
     public function getOid(): string
     {
         return $this->oid;
