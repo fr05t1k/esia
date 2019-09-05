@@ -15,6 +15,34 @@ class AbstractSignerPKCS7
     use LoggerAwareTrait;
 
     /**
+     * Path to the certificate
+     *
+     * @var string
+     */
+    protected $certPath;
+
+    /**
+     * Path to the protected key
+     *
+     * @var string
+     */
+    protected $protectedKeyPath;
+
+    /**
+     * Password for the protected key
+     *
+     * @var string
+     */
+    protected $protectedKeyPassword;
+
+    /**
+     * Temporary directory for message signing (must me writable)
+     *
+     * @var string
+     */
+    protected $tmpPath;
+
+    /**
      * @throws SignFailException
      */
     protected function checkFilesExists(): void

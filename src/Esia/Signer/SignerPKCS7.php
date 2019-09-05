@@ -12,34 +12,6 @@ class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
     use LoggerAwareTrait;
 
     /**
-     * Path to the certificate
-     *
-     * @var string
-     */
-    private $certPath;
-
-    /**
-     * Path to the private key
-     *
-     * @var string
-     */
-    private $privateKeyPath;
-
-    /**
-     * Password for the private key
-     *
-     * @var string
-     */
-    private $privateKeyPassword;
-
-    /**
-     * Temporary directory for message signing (must me writable)
-     *
-     * @var string
-     */
-    private $tmpPath;
-
-    /**
      * SignerPKCS7 constructor.
      * @param string $certPath
      * @param string $privateKeyPath
@@ -91,7 +63,6 @@ class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
         $messageFile = $this->tmpPath . DIRECTORY_SEPARATOR . $this->getRandomString();
         $signFile = $this->tmpPath . DIRECTORY_SEPARATOR . $this->getRandomString();
         file_put_contents($messageFile, $message);
-        codecept_debug($this->certPath);
         $signResult = openssl_pkcs7_sign(
             $messageFile,
             $signFile,

@@ -10,34 +10,6 @@ use Psr\Log\NullLogger;
 class CliSignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
 {
     use LoggerAwareTrait;
-    
-    /**
-     * Path to the certificate
-     *
-     * @var string
-     */
-    private $certPath;
-
-    /**
-     * Path to the private key
-     *
-     * @var string
-     */
-    private $privateKeyPath;
-
-    /**
-     * Password for the private key
-     *
-     * @var string
-     */
-    private $privateKeyPassword;
-    
-    /**
-     * Temporary directory for message signing (must me writable)
-     *
-     * @var string
-     */
-    private $tmpPath;
 
     /**
      * SignerPKCS7 constructor.
