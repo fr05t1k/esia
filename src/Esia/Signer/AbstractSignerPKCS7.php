@@ -35,6 +35,13 @@ abstract class AbstractSignerPKCS7
      * @var string
      */
     protected $privateKeyPassword;
+    
+    /**
+     * Additional data
+     *
+     * @var array
+     */
+    protected $additionalData;
 
     /**
      * SignerPKCS7 constructor.
@@ -47,12 +54,14 @@ abstract class AbstractSignerPKCS7
         string $certPath,
         string $privateKeyPath,
         ?string $privateKeyPassword,
-        string $tmpPath
+        string $tmpPath,
+        array $additionalData = []
     ) {
         $this->certPath = $certPath;
         $this->privateKeyPath = $privateKeyPath;
         $this->privateKeyPassword = $privateKeyPassword;
         $this->tmpPath = $tmpPath;
+        $this->additionalData = $additionalData;
         $this->logger = new NullLogger();
     }
 

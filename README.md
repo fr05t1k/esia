@@ -20,7 +20,7 @@ composer require --prefer-dist fr05t1k/esia
 
 # Как использовать 
 
-Пример получения ссылки для авторизации
+Пример получения ссылки для авторизации c использованием сертификата и закрытого ключа:
 ```php
 <?php 
 $config = new \Esia\Config([
@@ -28,17 +28,45 @@ $config = new \Esia\Config([
   'redirectUrl' => 'http://my-site.com/response.php',
   'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
   'scope' => ['fullname', 'birthdate'],
+  'privateKeyPath' => 'my-site.com.key',
+  'privateKeyPassword' => 'password',
+  'certPath' => 'my-site.com.pem',
+  'tmpPath' => '/tmp',
 ]);
 $esia = new \Esia\OpenId($config);
-$esia->setSigner(new \Esia\Signer\SignerPKCS7(
-    'my-site.com.pem',
-    'my-site.com.pem',
-    'password',
-    '/tmp'
-));
 ?>
 
 <a href="<?=$esia->buildUrl()?>">Войти через портал госуслуги</a>
+```
+
+Пример получения ссылки для авторизации c использованием КриптоПро DSS сервера:
+```php
+<?php 
+$config = new \Esia\Config([
+  'clientId' => 'INSP03211',
+  'redirectUrl' => 'http://my-site.com/response.php',
+  'portalUrl' => 'https://esia-portal1.test.gosuslugi.ru/',
+  'scope' => ['fullname', 'birthdate'],
+  'signer' => 'CryptoProDSS',
+  'privateKeyPath' => '111', // ID сертификата на КриптоПро DSS сервере
+  'privateKeyPassword' => '123456', // Пин-код от сертификата
+  'certPath' => 'https://dss.server/SignServer/rest/api/documents', // Путь REST API КриптоПро DSS до конечной точки подписи документов
+  'tmpPath' => '',
+  // Параметры авторизации на КриптоПро DSS с использованием учетных данных владельца
+  'additionalData' => [
+  [
+    'oauthPath' => 'https://dss.server/STS/oauth/token',
+    'oauthData' => [
+      'grant_type' => 'password',
+      'username' => 'user',
+      'password' => 'password',
+      'resource' => 'urn:cryptopro:dss:frontend:signserver',
+      'client_id' => '12345678-9012-3456-7890-123456789012',
+    ],
+  ],
+]);
+$esia = new \Esia\OpenId($config);
+?>
 ```
 
 После редиректа на ваш `redirectUrl` вы получите в `$_GET['code']` код для получения токена
@@ -72,13 +100,17 @@ $documentInfo = $esia->getDocInfo();
 
 `scope` - по умолчанию: `fullname birthdate gender email mobile id_doc snils inn`. Запрашиваемые права у пользователя.
 
-`privateKeyPath` - путь до приватного ключа.
+`signer` - метод подписи запроса. Возможные варианты: SignerPKCS7, CliSignerPKCS7, SignerCryptoProDSS. По умолчанию SignerPKCS7.
 
-`privateKeyPassword` - пароль от приватного ключа.
+`privateKeyPath` - путь до приватного ключа или ID сертификата на КриптоПро DSS сервере.
 
-`certPath` - путь до сертификата.
+`privateKeyPassword` - пароль от приватного ключа или пин-код от сертификата.
 
-`tmpPath` - путь до дериктории где будет проходить подпись (должна быть доступна для записи).
+`certPath` - путь до сертификата или путь REST API КриптоПро DSS до конечной точки подписи документов.
+
+`tmpPath` - путь до дериктории где будет проходить подпись (должна быть доступна для записи). Для КриптоПро DSS не используется.
+
+`additionalData` - дополнительные параметры авторизации (для КриптоПро DSS - авторизация на OAuth сервере).
 
 # Токен и oid
 

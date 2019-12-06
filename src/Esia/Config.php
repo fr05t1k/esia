@@ -16,6 +16,8 @@ class Config
     private $codeUrlPath = 'aas/oauth2/ac';
     private $personUrlPath = 'rs/prns';
     private $privateKeyPassword = '';
+    private $signer = 'SignerPKCS7';
+    private $additionalData = [];
 
     /**
      * @var string[]
@@ -72,6 +74,8 @@ class Config
         $this->codeUrlPath = $config['codeUrlPath'] ?? $this->codeUrlPath;
         $this->personUrlPath = $config['personUrlPath'] ?? $this->personUrlPath;
         $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
+        $this->signer = $config['signer'] ?? $this->signer;
+        $this->additionalData = $config['additionalData'] ?? $this->additionalData;
         $this->oid = $config['oid'] ?? $this->oid;
         $this->scope = $config['scope'] ?? $this->scope;
         if (!is_array($this->scope)) {
@@ -97,6 +101,16 @@ class Config
     public function getPrivateKeyPassword(): string
     {
         return $this->privateKeyPassword;
+    }
+    
+    public function getSigner(): string
+    {
+        return $this->signer;
+    }
+    
+    public function getAdditionalData(): ?array
+    {
+        return $this->additionalData;
     }
 
     public function getCertPath(): string
