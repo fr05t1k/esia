@@ -26,7 +26,7 @@ class CliSignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
 
         $this->run(
             'openssl ' .
-            'smime -sign -binary -outform DER -noattr ' .
+            'smime -engine gost -sign -binary -outform DER -noattr ' .
             '-signer ' . escapeshellarg($this->certPath) . ' ' .
             '-inkey ' . escapeshellarg($this->privateKeyPath) . ' ' .
             '-passin ' . escapeshellarg('pass:' . $this->privateKeyPassword) . ' ' .
