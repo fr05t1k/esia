@@ -121,11 +121,11 @@ class OpenId
     }
 
     /**
-     * Return an url for authentication
-     * @param string $redirect_url
+     * Return an url for logout
+     * @param string $redirectUrl
      * @return string
      */
-    public function buildLogoutUrl(string $redirect_url = null): string
+    public function buildLogoutUrl(string $redirectUrl = null): string
     {
         $url = $this->config->getLogoutUrl() . '?%s';
         $params = [
@@ -133,7 +133,7 @@ class OpenId
         ];
 
         if ($redirect_url) {
-            $params['redirect_url'] = $redirect_url;
+            $params['redirect_url'] = $redirectUrl;
         }
 
         $request = http_build_query($params);        
