@@ -15,6 +15,7 @@ class Config
     private $tokenUrlPath = 'aas/oauth2/te';
     private $codeUrlPath = 'aas/oauth2/ac';
     private $personUrlPath = 'rs/prns';
+    private $logoutUrlPath = 'idp/ext/Logout';
     private $privateKeyPassword = '';
 
     /**
@@ -71,6 +72,7 @@ class Config
         $this->tokenUrlPath = $config['tokenUrlPath'] ?? $this->tokenUrlPath;
         $this->codeUrlPath = $config['codeUrlPath'] ?? $this->codeUrlPath;
         $this->personUrlPath = $config['personUrlPath'] ?? $this->personUrlPath;
+        $this->logoutUrlPath = $config['logoutUrlPath'] ?? $this->logoutUrlPath;
         $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
         $this->oid = $config['oid'] ?? $this->oid;
         $this->scope = $config['scope'] ?? $this->scope;
@@ -185,5 +187,13 @@ class Config
             throw new InvalidConfigurationException('Please provide oid');
         }
         return $this->portalUrl . $this->personUrlPath . '/' . $this->oid;
+    }
+
+    /**
+     * Return an url for logout
+     */    
+    public function getLogoutUrl(): string 
+    {
+        return $this->portalUrl . $this->logoutUrlPath;
     }
 }
