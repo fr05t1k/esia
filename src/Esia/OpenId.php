@@ -132,7 +132,7 @@ class OpenId
             'client_id' => $this->config->getClientId(),
         ];
 
-        if ($redirect_url) {
+        if ($redirectUrl) {
             $params['redirect_url'] = $redirectUrl;
         }
 
