@@ -121,6 +121,27 @@ class OpenId
     }
 
     /**
+     * Return an url for logout
+     * @param string $redirectUrl
+     * @return string
+     */
+    public function buildLogoutUrl(string $redirectUrl = null): string
+    {
+        $url = $this->config->getLogoutUrl() . '?%s';
+        $params = [
+            'client_id' => $this->config->getClientId(),
+        ];
+
+        if ($redirectUrl) {
+            $params['redirect_url'] = $redirectUrl;
+        }
+
+        $request = http_build_query($params);        
+
+        return sprintf($url, $request);
+    }
+
+    /**
      * Method collect a token with given code
      *
      * @param string $code

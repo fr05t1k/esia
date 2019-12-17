@@ -59,6 +59,7 @@ class ConfigTest extends Unit
                     'tokenUrlPath' => 'test',
                     'codeUrlPath' => 'test',
                     'personUrlPath' => 'test',
+                    'logoutUrlPath' => 'test',
                     'privateKeyPassword' => 'test',
                     'oid' => 'test',
                     'responseType' => 'test',
@@ -204,5 +205,22 @@ class ConfigTest extends Unit
 
         $this->expectException(InvalidConfigurationException::class);
         $this->assertSame('https://google.com/test/test', $config->getPersonUrl());
+    }
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public function testGetLogoutUrl(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+            'portalUrl' => 'https://google.com/',
+            'logoutUrlPath' => 'test',
+            'scope' => ['test', 'test2', 'test3'],
+        ]);
+
+        $this->assertSame('https://google.com/test', $config->getLogoutUrl());
     }
 }
