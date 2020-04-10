@@ -188,6 +188,70 @@ class OpenId
         $this->logger->debug('Payload: ', $payload);
 
         $token = $payload['access_token'];
+
+        $this->config->setToken($token);
+        $this->config->setCode($code);
+        $this->config->setRefreshToken($payload['refresh_token']);
+        $this->config->setState($payload['state']);
+
+        # get object id from token
+        $chunks = explode('.', $token);
+        $payload = json_decode($this->base64UrlSafeDecode($chunks[1]), true);
+        $this->config->setOid($payload['urn:esia:sbj_id']);
+
+        return $token;
+    }
+
+    /**
+     * Method refresh a token with given scopes
+     *
+     * @param array $scope
+     * @return mixed
+     * @throws AbstractEsiaException
+     * @throws SignFailException
+     */
+    public function refreshToken(array $scope = [])
+    {
+        $timestamp = $this->getTimeStamp();
+
+        if (empty($scope) == false) {
+            $this->config->setScope($scope);
+        }
+
+        $clientSecret = $this->signer->sign(
+            $this->config->getScopeString()
+            . $timestamp
+            . $this->config->getClientId()
+            . $this->config->getState()
+        );
+
+        $body = [
+            'client_id' => $this->config->getClientId(),
+            'code' => $this->config->getCode(),
+            'grant_type' => 'client_credentials',
+            'client_secret' => $clientSecret,
+            'state' => $this->config->getState(),
+            'redirect_uri' => $this->config->getRedirectUrl(),
+            'scope' => $this->config->getScopeString(),
+            'timestamp' => $timestamp,
+            'token_type' => 'Bearer',
+            'refresh_token' => $this->config->getRefreshToken(),
+        ];
+
+        $payload = $this->sendRequest(
+            new Request(
+                'POST',
+                $this->config->getTokenUrl(),
+                [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ],
+                http_build_query($body)
+            )
+        );
+
+        $this->logger->debug('Payload: ', $payload);
+
+        $token = $payload['access_token'];
         $this->config->setToken($token);
 
         # get object id from token
