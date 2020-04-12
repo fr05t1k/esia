@@ -11,7 +11,7 @@ class Config
     private $privateKeyPath;
     private $certPath;
 
-    private $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
+    private $portalUrl = 'https://esia-portal1.test.gosuslugi.ru/';
     private $tokenUrlPath = 'aas/oauth2/te';
     private $codeUrlPath = 'aas/oauth2/ac';
     private $personUrlPath = 'rs/prns';
