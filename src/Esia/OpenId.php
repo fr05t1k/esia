@@ -279,6 +279,59 @@ class OpenId
     }
 
     /**
+     * Fetch list of organization links
+     *
+     * You must collect token person before
+     * calling this method
+     *
+     * @return array
+     * @throws AbstractEsiaException
+     * @throws Exceptions\InvalidConfigurationException
+     */
+    public function getOrganizationLinks()
+    {
+        $links = [];
+
+        $url = $this->config->getPersonUrl() . '/orgs';
+        $response = $this->sendRequest(new Request('GET', $url));
+
+        if (array_key_exists('size', $response) && $response['size'] > 0) {
+            $links = $response['elements'];
+        }
+
+        return $links;
+    }
+
+    /**
+     * Fetch organization info from organization link
+     *
+     * You must collect token person before
+     * calling this method
+     *
+     * @param string $url - organization link
+     * @param array $scopes
+     * @return array
+     * @throws AbstractEsiaException
+     * @throws SignFailException
+     */
+    public function getOrganizationInfo(string $url, array $scopes = ['org_shortname', 'org_inn'])
+    {
+        if (preg_match('/\/rs\/orgs\/(\d+)/', $url, $matches) == false) {
+            throw new RuntimeException('Please provide correct organization url');
+        }
+
+        $orgId = $matches[1];
+
+        $scopes = array_map(function ($scope) use ($orgId) {
+            return "http://esia.gosuslugi.ru/{$scope}?org_oid={$orgId}";
+        }, $scopes);
+
+        $this->refreshToken($scopes);
+
+        return $this->sendRequest(new Request('GET', $url));
+    }
+
+    /**
      * Fetch contact info about current person
      *
      * You must collect token person before
