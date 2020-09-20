@@ -161,6 +161,11 @@ class Config
         return $this->redirectUrl;
     }
 
+    public function setRedirectUrl(string $redirectUrl): void
+    {
+        $this->redirectUrl = $redirectUrl;
+    }
+
     /**
      * Return an url for request to get an access token
      */
