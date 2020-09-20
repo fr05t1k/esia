@@ -15,7 +15,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
 use InvalidArgumentException;
-use Psr\Http\Client\ClientException;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -331,7 +331,7 @@ class OpenId
             }
 
             return $responseBody;
-        } catch (ClientException $e) {
+        } catch (ClientExceptionInterface $e) {
             $this->logger->error('Request was failed', ['exception' => $e]);
             $prev = $e->getPrevious();
 

@@ -1,5 +1,5 @@
 {
-  "name": "fr05t1k/esia",
+  "name": "dark-grey/esia",
   "license": "MIT",
   "description": "OpenID ESIA authenticating",
   "keywords": [
@@ -22,7 +22,8 @@
     "guzzlehttp/guzzle": "^6.1.0",
     "psr/log": "^1.0",
     "psr/http-message": "^1.0",
-    "psr/http-client": "^0.1"
+    "psr/http-client": "^1.0",
+    "ext-json": "*",
   },
   "suggest": {
     "ext-openssl": "SignerPKCS7 support"

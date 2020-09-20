@@ -1,3 +1,5 @@
+> Изменения в форке:
+> - обновлен `psr/http-client` до версии `1.0`
 
 # Единая система идентификации и аутентификации (ЕСИА) OpenId 
 
@@ -11,14 +13,21 @@
 
 # Установка
 
-При помощи [composer](https://getcomposer.org/download/):
+Добавьте в composer.json:
 ```
-composer require --prefer-dist fr05t1k/esia
+"repositories": [
+  {
+    "type": "vcs",
+    "url": "https://github.com/dark-grey/esia"
+  }
+],
 ```
-Или добавьте в composer.json
-
 ```
-"fr05t1k/esia" : "^2.0"
+"dark-grey/esia" : "^2.0"
+```
+или
+```
+composer require dark-grey/esia
 ```
 
 # Как использовать 

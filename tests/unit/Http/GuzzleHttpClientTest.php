@@ -11,7 +11,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
-use Psr\Http\Client\ClientException;
+use Psr\Http\Client\ClientExceptionInterface;
 
 /**
  * Class GuzzleHttpClientTest
@@ -21,8 +21,7 @@ use Psr\Http\Client\ClientException;
 class GuzzleHttpClientTest extends Unit
 {
     /**
-     * @throws ClientException
-     * @throws \HttpException
+     * @throws ClientExceptionInterface
      */
     public function testSendRequest(): void
     {
@@ -41,7 +40,7 @@ class GuzzleHttpClientTest extends Unit
 
         $this->assertSame(HttpCode::OK, $response->getStatusCode());
 
-        $this->expectException(ClientException::class);
+        $this->expectException(ClientExceptionInterface::class);
         $client->sendRequest(new Request('GET', '/'));
     }
 }
