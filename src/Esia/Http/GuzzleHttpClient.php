@@ -43,7 +43,7 @@ class GuzzleHttpClient implements ClientInterface
      *
      * @return ResponseInterface
      *
-     * @throws \Psr\Http\Client\ClientException If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
     {

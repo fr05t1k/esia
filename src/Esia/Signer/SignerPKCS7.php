@@ -4,12 +4,9 @@ namespace Esia\Signer;
 
 use Esia\Signer\Exceptions\CannotReadCertificateException;
 use Esia\Signer\Exceptions\SignFailException;
-use Psr\Log\LoggerAwareTrait;
 
 class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
 {
-    use LoggerAwareTrait;
-
     /**
      * @param string $message
      * @return string
