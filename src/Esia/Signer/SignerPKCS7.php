@@ -8,8 +8,6 @@ use Esia\Signer\Exceptions\SignFailException;
 class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
 {
     /**
-     * @param string $message
-     * @return string
      * @throws SignFailException
      */
     public function sign(string $message): string

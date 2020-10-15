@@ -3,18 +3,12 @@
 namespace Esia\Signer;
 
 use Esia\Signer\Exceptions\SignFailException;
-use Psr\Log\LoggerAwareTrait;
 
 class CliSignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
 {
-    use LoggerAwareTrait;
-
     /**
-     * @param string $message
-     * @return string
      * @throws SignFailException
      */
-
     public function sign(string $message): string
     {
         $this->checkFilesExists();
@@ -48,8 +42,6 @@ class CliSignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
     }
 
     /**
-     * @param $command
-     * @return void
      * @throws SignFailException
      */
     private function run(string $command): void

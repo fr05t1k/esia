@@ -18,9 +18,6 @@ class Config
     private $logoutUrlPath = 'idp/ext/Logout';
     private $privateKeyPassword = '';
 
-    /**
-     * @var string[]
-     */
     private $scope = [
         'fullname',
         'birthdate',
@@ -43,7 +40,6 @@ class Config
     /**
      * Config constructor.
      *
-     * @param array $config
      * @throws InvalidConfigurationException
      */
     public function __construct(array $config = [])
@@ -191,8 +187,8 @@ class Config
 
     /**
      * Return an url for logout
-     */    
-    public function getLogoutUrl(): string 
+     */
+    public function getLogoutUrl(): string
     {
         return $this->portalUrl . $this->logoutUrlPath;
     }

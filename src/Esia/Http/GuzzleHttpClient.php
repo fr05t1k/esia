@@ -5,6 +5,7 @@ namespace Esia\Http;
 use Esia\Http\Exceptions\HttpException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -18,7 +19,6 @@ class GuzzleHttpClient implements ClientInterface
 
     /**
      * GuzzleHttpClient constructor.
-     * @param Client $guzzle
      */
     public function __construct(Client $guzzle)
     {
@@ -43,7 +43,7 @@ class GuzzleHttpClient implements ClientInterface
      *
      * @return ResponseInterface
      *
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
