@@ -5,9 +5,9 @@ namespace Esia;
 use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\ForbiddenException;
 use Esia\Exceptions\RequestFailException;
+use Esia\Http\GuzzleHttpClient;
 use Esia\Signer\Exceptions\CannotGenerateRandomIntException;
 use Esia\Signer\Exceptions\SignFailException;
-use Esia\Http\GuzzleHttpClient;
 use Esia\Signer\SignerInterface;
 use Esia\Signer\SignerPKCS7;
 use Exception;
@@ -63,8 +63,6 @@ class OpenId
 
     /**
      * Replace default signer
-     *
-     * @param SignerInterface $signer
      */
     public function setSigner(SignerInterface $signer): void
     {
@@ -73,8 +71,6 @@ class OpenId
 
     /**
      * Get config
-     *
-     * @return Config
      */
     public function getConfig(): Config
     {
@@ -122,8 +118,6 @@ class OpenId
 
     /**
      * Return an url for logout
-     * @param string $redirectUrl
-     * @return string
      */
     public function buildLogoutUrl(string $redirectUrl = null): string
     {
@@ -136,7 +130,7 @@ class OpenId
             $params['redirect_url'] = $redirectUrl;
         }
 
-        $request = http_build_query($params);        
+        $request = http_build_query($params);
 
         return sprintf($url, $request);
     }
@@ -144,8 +138,6 @@ class OpenId
     /**
      * Method collect a token with given code
      *
-     * @param string $code
-     * @return string
      * @throws SignFailException
      * @throws AbstractEsiaException
      */
@@ -204,7 +196,6 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @return null|array
      * @throws AbstractEsiaException
      */
     public function getPersonInfo(): array
@@ -220,7 +211,6 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @return array
      * @throws Exceptions\InvalidConfigurationException
      * @throws AbstractEsiaException
      */
@@ -243,7 +233,6 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @return array
      * @throws Exceptions\InvalidConfigurationException
      * @throws AbstractEsiaException
      */
@@ -265,7 +254,6 @@ class OpenId
      * You must collect token person before
      * calling this method
      *
-     * @return array
      * @throws Exceptions\InvalidConfigurationException
      * @throws AbstractEsiaException
      */
@@ -286,9 +274,6 @@ class OpenId
      * This method can iterate on each element
      * and fetch entities from esia by url
      *
-     *
-     * @param $elements array of urls
-     * @return array
      * @throws AbstractEsiaException
      */
     private function collectArrayElements($elements): array
@@ -300,15 +285,12 @@ class OpenId
             if ($elementPayload) {
                 $result[] = $elementPayload;
             }
-
         }
 
         return $result;
     }
 
     /**
-     * @param RequestInterface $request
-     * @return array
      * @throws AbstractEsiaException
      */
     private function sendRequest(RequestInterface $request): array
@@ -354,19 +336,14 @@ class OpenId
         }
     }
 
-    /**
-     * @return string
-     */
     private function getTimeStamp(): string
     {
         return date('Y.m.d H:i:s O');
     }
 
-
     /**
      * Generate state with uuid
      *
-     * @return string
      * @throws SignFailException
      */
     private function buildState(): string
@@ -390,11 +367,8 @@ class OpenId
 
     /**
      * Url safe for base64
-     *
-     * @param string $string
-     * @return string
      */
-    private function base64UrlSafeDecode($string): string
+    private function base64UrlSafeDecode(string $string): string
     {
         $base64 = strtr($string, '-_', '+/');
 

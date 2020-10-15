@@ -38,10 +38,6 @@ abstract class AbstractSignerPKCS7
 
     /**
      * SignerPKCS7 constructor.
-     * @param string $certPath
-     * @param string $privateKeyPath
-     * @param string $privateKeyPassword
-     * @param string $tmpPath
      */
     public function __construct(
         string $certPath,
@@ -90,8 +86,6 @@ abstract class AbstractSignerPKCS7
 
     /**
      * Generate random unique string
-     *
-     * @return string
      */
     protected function getRandomString(): string
     {
@@ -100,11 +94,8 @@ abstract class AbstractSignerPKCS7
 
     /**
      * Url safe for base64
-     *
-     * @param string $string
-     * @return string
      */
-    protected function urlSafe($string): string
+    protected function urlSafe(string $string): string
     {
         return rtrim(strtr(trim($string), '+/', '-_'), '=');
     }

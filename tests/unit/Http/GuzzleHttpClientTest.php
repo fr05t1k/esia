@@ -11,6 +11,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use HttpException;
 use Psr\Http\Client\ClientExceptionInterface;
 
 /**
@@ -22,11 +23,10 @@ class GuzzleHttpClientTest extends Unit
 {
     /**
      * @throws ClientExceptionInterface
-     * @throws \HttpException
+     * @throws HttpException
      */
     public function testSendRequest(): void
     {
-
         $mock = new MockHandler([
             new Response(),
             new RequestException('Error Communicating with Server', new Request('GET', 'test'))
@@ -39,7 +39,7 @@ class GuzzleHttpClientTest extends Unit
 
         $response = $client->sendRequest(new Request('GET', '/'));
 
-        $this->assertSame(HttpCode::OK, $response->getStatusCode());
+        self::assertSame(HttpCode::OK, $response->getStatusCode());
 
         $this->expectException(ClientExceptionInterface::class);
         $client->sendRequest(new Request('GET', '/'));

@@ -3,6 +3,12 @@
 namespace tests\unit\Signer;
 
 use Codeception\Test\Unit;
+use Esia\Signer\Exceptions\CannotReadCertificateException;
+use Esia\Signer\Exceptions\CannotReadPrivateKeyException;
+use Esia\Signer\Exceptions\NoSuchCertificateFileException;
+use Esia\Signer\Exceptions\NoSuchKeyFileException;
+use Esia\Signer\Exceptions\NoSuchTmpDirException;
+use Esia\Signer\Exceptions\SignFailException;
 use Esia\Signer\SignerPKCS7;
 
 /**
@@ -13,7 +19,7 @@ use Esia\Signer\SignerPKCS7;
 class SignerPKCS7Test extends Unit
 {
     /**
-     * @throws \Esia\Signer\Exceptions\SignFailException
+     * @throws SignFailException
      */
     public function testSign(): void
     {
@@ -25,12 +31,11 @@ class SignerPKCS7Test extends Unit
         );
 
         $sign = $signer->sign('test');
-        $this->assertNotEmpty($sign);
+        self::assertNotEmpty($sign);
     }
 
     /**
-     * @expectedException  \Esia\Signer\Exceptions\NoSuchCertificateFileException
-     * @throws \Esia\Signer\Exceptions\SignFailException
+     * @throws SignFailException
      */
     public function testSignCertDoesNotExists(): void
     {
@@ -41,12 +46,12 @@ class SignerPKCS7Test extends Unit
             codecept_log_dir()
         );
 
+        $this->expectException(NoSuchCertificateFileException::class);
         $signer->sign('test');
     }
 
     /**
-     * @expectedException  \Esia\Signer\Exceptions\NoSuchKeyFileException
-     * @throws \Esia\Signer\Exceptions\SignFailException
+     * @throws SignFailException
      */
     public function testPrivateKeyDoesNotExists(): void
     {
@@ -57,12 +62,12 @@ class SignerPKCS7Test extends Unit
             codecept_log_dir()
         );
 
+        $this->expectException(NoSuchKeyFileException::class);
         $signer->sign('test');
     }
 
     /**
-     * @expectedException  \Esia\Signer\Exceptions\NoSuchTmpDirException
-     * @throws \Esia\Signer\Exceptions\SignFailException
+     * @throws SignFailException
      */
     public function testTmpDirDoesNotExists(): void
     {
@@ -73,12 +78,12 @@ class SignerPKCS7Test extends Unit
             '/'
         );
 
+        $this->expectException(NoSuchTmpDirException::class);
         $signer->sign('test');
     }
 
     /**
-     * @expectedException  \Esia\Signer\Exceptions\NoSuchTmpDirException
-     * @throws \Esia\Signer\Exceptions\SignFailException
+     * @throws SignFailException
      */
     public function testTmpDirIsNotWritable(): void
     {
@@ -89,12 +94,12 @@ class SignerPKCS7Test extends Unit
             codecept_log_dir('non_writable_directory')
         );
 
+        $this->expectException(NoSuchTmpDirException::class);
         $signer->sign('test');
     }
 
     /**
-     * @expectedException  \Esia\Signer\Exceptions\CannotReadCertificateException
-     * @throws \Esia\Signer\Exceptions\SignFailException
+     * @throws SignFailException
      */
     public function testCertificateIsNotReadable(): void
     {
@@ -105,12 +110,12 @@ class SignerPKCS7Test extends Unit
             codecept_log_dir()
         );
 
+        $this->expectException(CannotReadCertificateException::class);
         $signer->sign('test');
     }
 
     /**
-     * @expectedException  \Esia\Signer\Exceptions\CannotReadPrivateKeyException
-     * @throws \Esia\Signer\Exceptions\SignFailException
+     * @throws SignFailException
      */
     public function testPrivateKeyIsNotReadable(): void
     {
@@ -121,6 +126,7 @@ class SignerPKCS7Test extends Unit
             codecept_log_dir()
         );
 
+        $this->expectException(CannotReadPrivateKeyException::class);
         $signer->sign('test');
     }
 }
