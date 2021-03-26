@@ -3,7 +3,6 @@
 namespace tests\unit\Http;
 
 use Codeception\Test\Unit;
-use Codeception\Util\HttpCode;
 use Esia\Http\GuzzleHttpClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
@@ -39,7 +38,7 @@ class GuzzleHttpClientTest extends Unit
 
         $response = $client->sendRequest(new Request('GET', '/'));
 
-        self::assertSame(HttpCode::OK, $response->getStatusCode());
+        self::assertSame(200, $response->getStatusCode());
 
         $this->expectException(ClientExceptionInterface::class);
         $client->sendRequest(new Request('GET', '/'));
