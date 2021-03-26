@@ -3,15 +3,18 @@
 namespace tests\unit;
 
 use Esia\Config;
+use Esia\Exceptions\AbstractEsiaException;
+use Esia\Exceptions\InvalidConfigurationException;
 use Esia\OpenId;
 use Esia\Signer\CliSignerPKCS7;
 use GuzzleHttp\Psr7\Response;
 
-class OpenIdCliOpensslTest extends OpenIdTest {
+class OpenIdCliOpensslTest extends OpenIdTest
+{
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
+     * @throws InvalidConfigurationException
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->config = [
             'clientId' => 'INSP03211',
@@ -33,11 +36,10 @@ class OpenIdCliOpensslTest extends OpenIdTest {
             $this->config['tmpPath']
         ));
     }
-    
+
     /**
-     * @throws SignFailException
-     * @throws \Esia\Exceptions\AbstractEsiaException
-     * @throws \Esia\Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
+     * @throws InvalidConfigurationException
      */
     public function testGetToken(): void
     {
@@ -57,8 +59,8 @@ class OpenIdCliOpensslTest extends OpenIdTest {
             $this->config['tmpPath']
         ));
         $token = $openId->getToken('test');
-        $this->assertNotEmpty($token);
-        $this->assertSame($oid, $openId->getConfig()->getOid());
+        self::assertNotEmpty($token);
+        self::assertSame($oid, $openId->getConfig()->getOid());
     }
 
 }

@@ -4,9 +4,11 @@ namespace tests\unit;
 
 use Codeception\Test\Unit;
 use Esia\Config;
+use Esia\Exceptions\AbstractEsiaException;
+use Esia\Exceptions\InvalidConfigurationException;
 use Esia\Http\GuzzleHttpClient;
-use Esia\Signer\Exceptions\SignFailException;
 use Esia\OpenId;
+use Esia\Signer\Exceptions\SignFailException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -23,9 +25,9 @@ class OpenIdTest extends Unit
     public $openId;
 
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
+     * @throws InvalidConfigurationException
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->config = [
             'clientId' => 'INSP03211',
@@ -44,8 +46,8 @@ class OpenIdTest extends Unit
 
     /**
      * @throws SignFailException
-     * @throws \Esia\Exceptions\AbstractEsiaException
-     * @throws \Esia\Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
+     * @throws InvalidConfigurationException
      */
     public function testGetToken(): void
     {
@@ -60,13 +62,13 @@ class OpenIdTest extends Unit
         $openId = new OpenId($config, $client);
 
         $token = $openId->getToken('test');
-        $this->assertNotEmpty($token);
-        $this->assertSame($oid, $openId->getConfig()->getOid());
+        self::assertNotEmpty($token);
+        self::assertSame($oid, $openId->getConfig()->getOid());
     }
 
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
-     * @throws \Esia\Exceptions\AbstractEsiaException
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
      */
     public function testGetPersonInfo(): void
     {
@@ -81,13 +83,13 @@ class OpenIdTest extends Unit
         $openId = new OpenId($config, $client);
 
         $info = $openId->getPersonInfo();
-        $this->assertNotEmpty($info);
-        $this->assertSame(['username' => 'test'], $info);
+        self::assertNotEmpty($info);
+        self::assertSame(['username' => 'test'], $info);
     }
 
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
-     * @throws \Esia\Exceptions\AbstractEsiaException
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
      */
     public function testGetContactInfo(): void
     {
@@ -104,13 +106,13 @@ class OpenIdTest extends Unit
         $openId = new OpenId($config, $client);
 
         $info = $openId->getContactInfo();
-        $this->assertNotEmpty($info);
-        $this->assertSame([['phone' => '555 555 555'], ['email' => 'test@gmail.com']], $info);
+        self::assertNotEmpty($info);
+        self::assertSame([['phone' => '555 555 555'], ['email' => 'test@gmail.com']], $info);
     }
 
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
-     * @throws \Esia\Exceptions\AbstractEsiaException
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
      */
     public function testGetAddressInfo(): void
     {
@@ -127,13 +129,13 @@ class OpenIdTest extends Unit
         $openId = new OpenId($config, $client);
 
         $info = $openId->getAddressInfo();
-        $this->assertNotEmpty($info);
-        $this->assertSame([['phone' => '555 555 555'], ['email' => 'test@gmail.com']], $info);
+        self::assertNotEmpty($info);
+        self::assertSame([['phone' => '555 555 555'], ['email' => 'test@gmail.com']], $info);
     }
 
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
-     * @throws \Esia\Exceptions\AbstractEsiaException
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
      */
     public function testGetDocInfo(): void
     {
@@ -150,12 +152,12 @@ class OpenIdTest extends Unit
         $openId = new OpenId($config, $client);
 
         $info = $openId->getDocInfo();
-        $this->assertNotEmpty($info);
-        $this->assertSame([['phone' => '555 555 555'], ['email' => 'test@gmail.com']], $info);
+        self::assertNotEmpty($info);
+        self::assertSame([['phone' => '555 555 555'], ['email' => 'test@gmail.com']], $info);
     }
 
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
+     * @throws InvalidConfigurationException
      */
     public function testBuildLogoutUrl(): void
     {
@@ -163,20 +165,20 @@ class OpenIdTest extends Unit
 
         $url = $config->getLogoutUrl() . '?client_id=' . $config->getClientId();
         $logoutUrl = $this->openId->buildLogoutUrl();
-        $this->assertSame($url, $logoutUrl);
+        self::assertSame($url, $logoutUrl);
     }
 
     /**
-     * @throws \Esia\Exceptions\InvalidConfigurationException
+     * @throws InvalidConfigurationException
      */
     public function testBuildLogoutUrlWithRedirect(): void
     {
         $config = $this->openId->getConfig();
-        
+
         $redirectUrl = 'test.example.com';
         $url = $config->getLogoutUrl() . '?client_id=' . $config->getClientId() . '&redirect_url=' . $redirectUrl;
         $logoutUrl = $this->openId->buildLogoutUrl($redirectUrl);
-        $this->assertSame($url, $logoutUrl);
+        self::assertSame($url, $logoutUrl);
     }
 
     /**

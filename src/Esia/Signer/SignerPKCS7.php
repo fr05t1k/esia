@@ -3,6 +3,7 @@
 namespace Esia\Signer;
 
 use Esia\Signer\Exceptions\CannotReadCertificateException;
+use Esia\Signer\Exceptions\CannotReadPrivateKeyException;
 use Esia\Signer\Exceptions\SignFailException;
 
 class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
@@ -27,7 +28,7 @@ class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
         $cert = openssl_x509_read($certContent);
 
         if ($cert === false) {
-            throw new CannotReadCertificateException('Cannot read the certificate');
+            throw new CannotReadCertificateException('Cannot read the certificate: ' . openssl_error_string());
         }
 
         $this->logger->debug('Cert: ' . print_r($cert, true), ['cert' => $cert]);
@@ -35,7 +36,7 @@ class SignerPKCS7 extends AbstractSignerPKCS7 implements SignerInterface
         $privateKey = openssl_pkey_get_private($keyContent, $this->privateKeyPassword);
 
         if ($privateKey === false) {
-            throw new CannotReadCertificateException();
+            throw new CannotReadPrivateKeyException('Cannot read the private key: ' . openssl_error_string());
         }
 
         $this->logger->debug('Private key: : ' . print_r($privateKey, true), ['privateKey' => $privateKey]);
