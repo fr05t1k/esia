@@ -48,7 +48,7 @@ $esia->setSigner(new \Esia\Signer\SignerPKCS7(
 
 Пример получения токена и информации о пользователе
 
-```
+```php
 
 $esia = new \Esia\OpenId($config);
 
