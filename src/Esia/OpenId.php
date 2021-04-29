@@ -9,7 +9,6 @@ use Esia\Http\GuzzleHttpClient;
 use Esia\Signer\Exceptions\CannotGenerateRandomIntException;
 use Esia\Signer\Exceptions\SignFailException;
 use Esia\Signer\SignerInterface;
-use Esia\Signer\SignerPKCS7;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
@@ -53,11 +52,15 @@ class OpenId
         $this->config = $config;
         $this->client = $client ?? new GuzzleHttpClient(new Client());
         $this->logger = new NullLogger();
-        $this->signer = new SignerPKCS7(
+        
+        $signer = 'Esia\\Signer\\' . $config->getSigner();
+        
+        $this->signer = new $signer(
             $config->getCertPath(),
             $config->getPrivateKeyPath(),
             $config->getPrivateKeyPassword(),
-            $config->getTmpPath()
+            $config->getTmpPath(),
+            $config->getAdditionalData()
         );
     }
 
