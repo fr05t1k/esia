@@ -11,7 +11,7 @@ class Config
     private $privateKeyPath;
     private $certPath;
 
-    private $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
+    private $portalUrl = 'https://esia-portal1.test.gosuslugi.ru/';
     private $tokenUrlPath = 'aas/oauth2/te';
     private $codeUrlPath = 'aas/oauth2/ac';
     private $personUrlPath = 'rs/prns';
@@ -36,6 +36,9 @@ class Config
 
     private $token = '';
     private $oid = '';
+    private $refreshToken = '';
+    private $state = '';
+    private $code = '';
 
     /**
      * Config constructor.
@@ -117,6 +120,11 @@ class Config
         return $this->scope;
     }
 
+    public function setScope(array $scope): void
+    {
+        $this->scope = $scope;
+    }
+
     public function getScopeString(): string
     {
         return implode(' ', $this->scope);
@@ -145,6 +153,36 @@ class Config
     public function setToken(string $token): void
     {
         $this->token = $token;
+    }
+
+    public function setRefreshToken(string $refreshToken): void
+    {
+        $this->refreshToken = $refreshToken;
+    }
+
+    public function getRefreshToken(): string
+    {
+        return $this->refreshToken;
+    }
+
+    public function setState(string $state): void
+    {
+        $this->state = $state;
+    }
+
+    public function getState(): string
+    {
+        return $this->state;
+    }
+
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    public function setCode(string $code): void
+    {
+        $this->code = $code;
     }
 
     public function getClientId(): string
