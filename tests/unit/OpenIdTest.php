@@ -137,6 +137,29 @@ class OpenIdTest extends Unit
      * @throws InvalidConfigurationException
      * @throws AbstractEsiaException
      */
+    public function testGetVehicleInfo(): void
+    {
+        $config = new Config($this->config);
+        $oid = '123';
+        $config->setOid($oid);
+        $config->setToken('test');
+
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{"size": 2, "elements": ["name", "number"]}'),
+            new Response(200, [], '{"name": "Vehicle"}'),
+            new Response(200, [], '{"number": "111111"}'),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        $info = $openId->getVehicleInfo();
+        self::assertNotEmpty($info);
+        self::assertSame([['name' => 'Vehicle'], ['number' => '111111']], $info);
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
     public function testGetDocInfo(): void
     {
         $config = new Config($this->config);

@@ -271,6 +271,27 @@ class OpenId
     }
 
     /**
+     * Fetch vehicles info about current person
+     *
+     * You must collect token person before
+     * calling this method
+     *
+     * @throws Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function getVehicleInfo(): array
+    {
+        $url = $this->config->getPersonUrl() . '/vhls';
+        $payload = $this->sendRequest(new Request('GET', $url));
+
+        if ($payload['size'] > 0) {
+            return $this->collectArrayElements($payload['elements']);
+        }
+
+        return $payload;
+    }
+
+    /**
      * This method can iterate on each element
      * and fetch entities from esia by url
      *
