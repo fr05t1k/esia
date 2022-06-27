@@ -17,6 +17,8 @@ class Config
     private $personUrlPath = 'rs/prns';
     private $logoutUrlPath = 'idp/ext/Logout';
     private $privateKeyPassword = '';
+    private $signer = 'SignerPKCS7';
+    private $additionalData = [];
 
     private $scope = [
         'fullname',
@@ -70,6 +72,8 @@ class Config
         $this->personUrlPath = $config['personUrlPath'] ?? $this->personUrlPath;
         $this->logoutUrlPath = $config['logoutUrlPath'] ?? $this->logoutUrlPath;
         $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
+        $this->signer = $config['signer'] ?? $this->signer;
+        $this->additionalData = $config['additionalData'] ?? $this->additionalData;
         $this->oid = $config['oid'] ?? $this->oid;
         $this->scope = $config['scope'] ?? $this->scope;
         if (!is_array($this->scope)) {
@@ -95,6 +99,16 @@ class Config
     public function getPrivateKeyPassword(): string
     {
         return $this->privateKeyPassword;
+    }
+    
+    public function getSigner(): string
+    {
+        return $this->signer;
+    }
+    
+    public function getAdditionalData(): ?array
+    {
+        return $this->additionalData;
     }
 
     public function getCertPath(): string
