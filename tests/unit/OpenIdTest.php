@@ -158,6 +158,26 @@ class OpenIdTest extends Unit
 
     /**
      * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetOrgInfo(): void
+    {
+        $config = new Config($this->config);
+        $oid = '123';
+        $config->setOid($oid);
+        $config->setToken('test');
+
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{"size": 1, "elements": [{"oid": "321", "prnOid": "123", "fullName": "Акционероное Общество \"Рога и Копыта\"", "shortName": "АО \"Рога и Копыта\"", "ogrn": "1111111111111", "type": "LEGAL", "chief": "", "admin": "", "email": "test@gmail.com", "active": "1", "hasRightOfSubstitution": "", "hasApprovalTabAccess": "", "isLiquidated": ""}]}'),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        $info = $openId->getOrgInfo();
+        self::assertNotEmpty($info);
+        self::assertSame([["oid" =>"321", "prnOid" =>"123", "fullName" =>"Акционероное Общество \"Рога и Копыта\"", "shortName" =>"АО \"Рога и Копыта\"", "ogrn" =>"1111111111111", "type" =>"LEGAL", "chief" =>"", "admin" =>"", "email" =>"test@gmail.com", "active" =>"1", "hasRightOfSubstitution" =>"", "hasApprovalTabAccess" =>"", "isLiquidated" =>""]], $info);
+    }
+    /**
+     * @throws InvalidConfigurationException
      */
     public function testBuildLogoutUrl(): void
     {

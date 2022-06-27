@@ -48,6 +48,11 @@ class OpenId
      */
     private $config;
 
+    /**
+     * @var string
+     */
+    private $state;
+
     public function __construct(Config $config, ClientInterface $client = null)
     {
         $this->config = $config;
@@ -113,6 +118,7 @@ class OpenId
 
         $request = http_build_query($params);
 
+        $this->state = $state;
         return sprintf($url, $request);
     }
 
@@ -271,6 +277,27 @@ class OpenId
     }
 
     /**
+     * Fetch information about the organizations in which the current person is included
+     *
+     * You must collect token person before
+     * calling this method
+     *
+     * @throws Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function getOrgInfo(): array
+    {
+        $url = $this->config->getPersonUrl() . '/roles';
+        $payload = $this->sendRequest(new Request('GET', $url));
+
+        if ($payload && $payload['size'] > 0) {
+            return $payload['elements'];
+        }
+
+        return $payload;
+    }
+
+    /**
      * This method can iterate on each element
      * and fetch entities from esia by url
      *
@@ -363,6 +390,18 @@ class OpenId
         } catch (Exception $e) {
             throw new CannotGenerateRandomIntException('Cannot generate random integer', $e);
         }
+    }
+
+    /**
+     * Returns the current value of the state parameter.
+     *
+     * This can be accessed by the redirect handler during authorization.
+     *
+     * @return string
+     */
+    public function getState(): string
+    {
+        return $this->state;
     }
 
     /**
