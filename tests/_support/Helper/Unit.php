@@ -4,7 +4,6 @@ namespace Helper;
 // all public methods declared in helper class will be available in $I
 
 use Codeception\Module;
-use Codeception\TestCase;
 
 class Unit extends Module
 {

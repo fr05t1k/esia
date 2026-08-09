@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Esia\Http\Exceptions;
 
 use Psr\Http\Client\ClientExceptionInterface;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Esia;
 
 use Esia\Exceptions\AbstractEsiaException;
@@ -29,26 +31,19 @@ class OpenId
 {
     use LoggerAwareTrait;
 
-    /**
-     * @var SignerInterface
-     */
-    private $signer;
+    private SignerInterface $signer;
 
     /**
      * Http Client
-     *
-     * @var ClientInterface
      */
-    private $client;
+    private ClientInterface $client;
 
     /**
      * Config
-     *
-     * @var Config
      */
-    private $config;
+    private Config $config;
 
-    public function __construct(Config $config, ClientInterface $client = null)
+    public function __construct(Config $config, ?ClientInterface $client = null)
     {
         $this->config = $config;
         $this->client = $client ?? new GuzzleHttpClient(new Client());
@@ -84,7 +79,7 @@ class OpenId
      *     <a href="<?=$esia->buildUrl()?>">Login</a>
      * ```
      *
-     * @return string|false
+     * @return string
      * @throws SignFailException
      */
     public function buildUrl()
@@ -119,7 +114,7 @@ class OpenId
     /**
      * Return an url for logout
      */
-    public function buildLogoutUrl(string $redirectUrl = null): string
+    public function buildLogoutUrl(?string $redirectUrl = null): string
     {
         $url = $this->config->getLogoutUrl() . '?%s';
         $params = [
@@ -185,7 +180,7 @@ class OpenId
         # get object id from token
         $chunks = explode('.', $token);
         $payload = json_decode($this->base64UrlSafeDecode($chunks[1]), true);
-        $this->config->setOid($payload['urn:esia:sbj_id']);
+        $this->config->setOid((string) $payload['urn:esia:sbj_id']);
 
         return $token;
     }
@@ -241,7 +236,7 @@ class OpenId
         $url = $this->config->getPersonUrl() . '/addrs';
         $payload = $this->sendRequest(new Request('GET', $url));
 
-        if ($payload['size'] > 0) {
+        if ($payload && $payload['size'] > 0) {
             return $this->collectArrayElements($payload['elements']);
         }
 
@@ -274,9 +269,10 @@ class OpenId
      * This method can iterate on each element
      * and fetch entities from esia by url
      *
+     * @param string[] $elements
      * @throws AbstractEsiaException
      */
-    private function collectArrayElements($elements): array
+    private function collectArrayElements(array $elements): array
     {
         $result = [];
         foreach ($elements as $elementUrl) {
@@ -320,7 +316,6 @@ class OpenId
 
             // Only for Guzzle
             if ($prev instanceof BadResponseException
-                && $prev->getResponse() !== null
                 && $prev->getResponse()->getStatusCode() === 403
             ) {
                 throw new ForbiddenException('Request is forbidden', 0, $e);
@@ -361,7 +356,7 @@ class OpenId
                 random_int(0, 0xffff)
             );
         } catch (Exception $e) {
-            throw new CannotGenerateRandomIntException('Cannot generate random integer', $e);
+            throw new CannotGenerateRandomIntException('Cannot generate random integer', 0, $e);
         }
     }
 

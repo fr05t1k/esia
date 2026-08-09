@@ -115,6 +115,16 @@ class ConfigTest extends Unit
                 ],
                 InvalidConfigurationException::class,
             ],
+            'scope with non-string element' => [
+                [
+                    'clientId' => 'test',
+                    'redirectUrl' => 'http://google.com',
+                    'privateKeyPath' => '/tmp',
+                    'certPath' => '/tmp',
+                    'scope' => ['test', 123, 'test3'],
+                ],
+                InvalidConfigurationException::class,
+            ],
         ];
     }
 

@@ -1,24 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Esia;
 
 use Esia\Exceptions\InvalidConfigurationException;
 
 class Config
 {
-    private $clientId;
-    private $redirectUrl;
-    private $privateKeyPath;
-    private $certPath;
+    private ?string $clientId = null;
+    private ?string $redirectUrl = null;
+    private ?string $privateKeyPath = null;
+    private ?string $certPath = null;
 
-    private $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
-    private $tokenUrlPath = 'aas/oauth2/te';
-    private $codeUrlPath = 'aas/oauth2/ac';
-    private $personUrlPath = 'rs/prns';
-    private $logoutUrlPath = 'idp/ext/Logout';
-    private $privateKeyPassword = '';
+    private string $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
+    private string $tokenUrlPath = 'aas/oauth2/te';
+    private string $codeUrlPath = 'aas/oauth2/ac';
+    private string $personUrlPath = 'rs/prns';
+    private string $logoutUrlPath = 'idp/ext/Logout';
+    private string $privateKeyPassword = '';
 
-    private $scope = [
+    /**
+     * @var string[]
+     */
+    private array $scope = [
         'fullname',
         'birthdate',
         'gender',
@@ -29,13 +34,13 @@ class Config
         'inn',
     ];
 
-    private $tmpPath = '/var/tmp';
+    private string $tmpPath = '/var/tmp';
 
-    private $responseType = 'code';
-    private $accessType = 'offline';
+    private string $responseType = 'code';
+    private string $accessType = 'offline';
 
-    private $token = '';
-    private $oid = '';
+    private string $token = '';
+    private string $oid = '';
 
     /**
      * Config constructor.
@@ -71,10 +76,16 @@ class Config
         $this->logoutUrlPath = $config['logoutUrlPath'] ?? $this->logoutUrlPath;
         $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
         $this->oid = $config['oid'] ?? $this->oid;
-        $this->scope = $config['scope'] ?? $this->scope;
-        if (!is_array($this->scope)) {
+        $scope = $config['scope'] ?? $this->scope;
+        if (!is_array($scope)) {
             throw new InvalidConfigurationException('scope must be array of strings');
         }
+        foreach ($scope as $scopeItem) {
+            if (!is_string($scopeItem)) {
+                throw new InvalidConfigurationException('scope must be array of strings');
+            }
+        }
+        $this->scope = $scope;
 
         $this->responseType = $config['responseType'] ?? $this->responseType;
         $this->accessType = $config['accessType'] ?? $this->accessType;
