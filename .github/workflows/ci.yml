@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Setup GOST OpenSSL engine
+        run: |
+          sudo apt-get install -y libengine-gost-openssl1.1
+          sudo cp tests/openssl.cnf /usr/lib/ssl/openssl.cnf
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: openssl
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction
+
+      - name: Run tests
+        run: |
+          chmod 000 tests/_data/non_readable_file
+          php vendor/codeception/codeception/codecept run
