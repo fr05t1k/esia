@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Esia\Signer;
 
 use Esia\Signer\Exceptions\CannotReadCertificateException;
@@ -8,6 +10,7 @@ use Esia\Signer\Exceptions\NoSuchCertificateFileException;
 use Esia\Signer\Exceptions\NoSuchKeyFileException;
 use Esia\Signer\Exceptions\NoSuchTmpDirException;
 use Esia\Signer\Exceptions\SignFailException;
+use Exception;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 
@@ -16,48 +19,19 @@ abstract class AbstractSignerPKCS7
     use LoggerAwareTrait;
 
     /**
-     * Path to the certificate
-     *
-     * @var string
-     */
-    protected $certPath;
-
-    /**
-     * Path to the private key
-     *
-     * @var string
-     */
-    protected $privateKeyPath;
-
-    /**
-     * Password for the private key
-     *
-     * @var string
-     */
-    protected $privateKeyPassword;
-
-    /**
-     * SignerPKCS7 constructor.
+     * @param string $certPath Path to the certificate
+     * @param string $privateKeyPath Path to the private key
+     * @param string|null $privateKeyPassword Password for the private key
+     * @param string $tmpPath Temporary directory for message signing (must be writable)
      */
     public function __construct(
-        string $certPath,
-        string $privateKeyPath,
-        ?string $privateKeyPassword,
-        string $tmpPath
+        protected string $certPath,
+        protected string $privateKeyPath,
+        protected ?string $privateKeyPassword,
+        protected string $tmpPath
     ) {
-        $this->certPath = $certPath;
-        $this->privateKeyPath = $privateKeyPath;
-        $this->privateKeyPassword = $privateKeyPassword;
-        $this->tmpPath = $tmpPath;
         $this->logger = new NullLogger();
     }
-
-    /**
-     * Temporary directory for message signing (must me writable)
-     *
-     * @var string
-     */
-    protected $tmpPath;
 
     /**
      * @throws SignFailException
@@ -86,10 +60,16 @@ abstract class AbstractSignerPKCS7
 
     /**
      * Generate random unique string
+     *
+     * @throws SignFailException
      */
     protected function getRandomString(): string
     {
-        return md5(uniqid(mt_rand(), true));
+        try {
+            return bin2hex(random_bytes(16));
+        } catch (Exception $e) {
+            throw new SignFailException('Cannot generate random string', 0, $e);
+        }
     }
 
     /**

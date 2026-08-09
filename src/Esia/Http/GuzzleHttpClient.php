@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Esia\Http;
 
 use Esia\Http\Exceptions\HttpException;
@@ -13,16 +15,10 @@ use Psr\Http\Message\ResponseInterface;
 class GuzzleHttpClient implements ClientInterface
 {
     /**
-     * @var Client
-     */
-    private $guzzle;
-
-    /**
      * GuzzleHttpClient constructor.
      */
-    public function __construct(Client $guzzle)
+    public function __construct(private readonly Client $guzzle)
     {
-        $this->guzzle = $guzzle;
     }
 
     /**

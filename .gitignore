@@ -5,3 +5,4 @@ public/*
 vendor
 
 tests/_data/non_readable_file
+composer.lock

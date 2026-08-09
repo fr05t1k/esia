@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Esia\Signer;
 
 use Esia\Signer\Exceptions\SignFailException;
