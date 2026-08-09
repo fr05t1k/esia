@@ -1,0 +1,10 @@
+openssl_conf = openssl_init
+
+[openssl_init]
+engines = engines
+
+[engines]
+gost = gost_engine
+
+[gost_engine]
+default_algorithms = ALL

@@ -1,7 +1,7 @@
 
 # Единая система идентификации и аутентификации (ЕСИА) OpenId 
 
-[![Build Status](https://travis-ci.org/fr05t1k/esia.svg?branch=master)](https://travis-ci.org/fr05t1k/esia)
+[![CI](https://github.com/fr05t1k/esia/actions/workflows/ci.yml/badge.svg)](https://github.com/fr05t1k/esia/actions/workflows/ci.yml)
 
 # Описание
 Компонент для авторизации на портале "Госуслуги".
