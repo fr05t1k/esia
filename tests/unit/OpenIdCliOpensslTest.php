@@ -7,7 +7,8 @@ use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\InvalidConfigurationException;
 use Esia\OpenId;
 use Esia\Signer\CliSignerPKCS7;
-use GuzzleHttp\Psr7\Response;
+use Nyholm\Psr7\Response;
+
 
 class OpenIdCliOpensslTest extends OpenIdTest
 {

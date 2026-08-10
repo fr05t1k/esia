@@ -7,19 +7,19 @@ namespace Esia;
 use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\ForbiddenException;
 use Esia\Exceptions\RequestFailException;
-use Esia\Http\GuzzleHttpClient;
 use Esia\Signer\Exceptions\CannotGenerateRandomIntException;
 use Esia\Signer\Exceptions\SignFailException;
 use Esia\Signer\SignerInterface;
 use Esia\Signer\SignerPKCS7;
 use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\BadResponseException;
-use GuzzleHttp\Psr7\Request;
+use Http\Discovery\Psr17FactoryDiscovery;
+use Http\Discovery\Psr18ClientDiscovery;
 use InvalidArgumentException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -38,15 +38,25 @@ class OpenId
      */
     private ClientInterface $client;
 
+    private RequestFactoryInterface $requestFactory;
+
+    private StreamFactoryInterface $streamFactory;
+
     /**
      * Config
      */
     private Config $config;
 
-    public function __construct(Config $config, ?ClientInterface $client = null)
-    {
+    public function __construct(
+        Config $config,
+        ?ClientInterface $client = null,
+        ?RequestFactoryInterface $requestFactory = null,
+        ?StreamFactoryInterface $streamFactory = null
+    ) {
         $this->config = $config;
-        $this->client = $client ?? new GuzzleHttpClient(new Client());
+        $this->client = $client ?? Psr18ClientDiscovery::find();
+        $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
+        $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
         $this->logger = new NullLogger();
         $this->signer = new SignerPKCS7(
             $config->getCertPath(),
@@ -171,16 +181,12 @@ class OpenId
             $body['client_certificate_hash'] = $clientCertificateHash;
         }
 
-        $payload = $this->sendRequest(
-            new Request(
-                'POST',
-                $this->config->getTokenUrl(),
-                [
-                    'Content-Type' => 'application/x-www-form-urlencoded',
-                ],
-                http_build_query($body)
-            )
-        );
+        $request = $this->requestFactory
+            ->createRequest('POST', $this->config->getTokenUrl())
+            ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
+            ->withBody($this->streamFactory->createStream(http_build_query($body)));
+
+        $payload = $this->sendRequest($request);
 
         $this->logger->debug('Payload: ', $payload);
 
@@ -207,7 +213,7 @@ class OpenId
     {
         $url = $this->config->getPersonUrl();
 
-        return $this->sendRequest(new Request('GET', $url));
+        return $this->sendRequest($this->requestFactory->createRequest('GET', $url));
     }
 
     /**
@@ -222,7 +228,7 @@ class OpenId
     public function getContactInfo(): array
     {
         $url = $this->config->getPersonUrl() . '/ctts';
-        $payload = $this->sendRequest(new Request('GET', $url));
+        $payload = $this->sendRequest($this->requestFactory->createRequest('GET', $url));
 
         if ($payload && $payload['size'] > 0) {
             return $this->collectArrayElements($payload['elements']);
@@ -244,7 +250,7 @@ class OpenId
     public function getAddressInfo(): array
     {
         $url = $this->config->getPersonUrl() . '/addrs';
-        $payload = $this->sendRequest(new Request('GET', $url));
+        $payload = $this->sendRequest($this->requestFactory->createRequest('GET', $url));
 
         if ($payload && $payload['size'] > 0) {
             return $this->collectArrayElements($payload['elements']);
@@ -266,7 +272,7 @@ class OpenId
     {
         $url = $this->config->getPersonUrl() . '/docs';
 
-        $payload = $this->sendRequest(new Request('GET', $url));
+        $payload = $this->sendRequest($this->requestFactory->createRequest('GET', $url));
 
         if ($payload && $payload['size'] > 0) {
             return $this->collectArrayElements($payload['elements']);
@@ -286,7 +292,7 @@ class OpenId
     {
         $result = [];
         foreach ($elements as $elementUrl) {
-            $elementPayload = $this->sendRequest(new Request('GET', $elementUrl));
+            $elementPayload = $this->sendRequest($this->requestFactory->createRequest('GET', $elementUrl));
 
             if ($elementPayload) {
                 $result[] = $elementPayload;
@@ -307,6 +313,17 @@ class OpenId
                 $request = $request->withHeader('Authorization', 'Bearer ' . $this->config->getToken());
             }
             $response = $this->client->sendRequest($request);
+
+            $statusCode = $response->getStatusCode();
+            if ($statusCode === 403) {
+                throw new ForbiddenException('Request is forbidden');
+            }
+            if ($statusCode >= 400) {
+                throw new RequestFailException(
+                    sprintf('Request is failed with status code %d', $statusCode)
+                );
+            }
+
             $responseBody = json_decode($response->getBody()->getContents(), true);
 
             if (!is_array($responseBody)) {
@@ -322,15 +339,6 @@ class OpenId
             return $responseBody;
         } catch (ClientExceptionInterface $e) {
             $this->logger->error('Request was failed', ['exception' => $e]);
-            $prev = $e->getPrevious();
-
-            // Only for Guzzle
-            if ($prev instanceof BadResponseException
-                && $prev->getResponse()->getStatusCode() === 403
-            ) {
-                throw new ForbiddenException('Request is forbidden', 0, $e);
-            }
-
             throw new RequestFailException('Request is failed', 0, $e);
         } catch (RuntimeException $e) {
             $this->logger->error('Cannot read body', ['exception' => $e]);
