@@ -149,6 +149,54 @@ GOST-подписи через CryptoPro) через `\Esia\OpenId::setTokenVali
 `\Esia\Token\OpenSslSignatureVerifier` (RSA из коробки; алгоритмы GOST-2012 —
 при наличии GOST-движка в OpenSSL).
 
+## Подпись запросов (сигнеры)
+
+Для получения токена запрос к ЕСИА должен быть подписан. ЕСИА требует подпись
+**ГОСТ Р 34.10-2012** (RSA больше не поддерживается в продуктивной среде).
+Сигнер задаётся через `\Esia\OpenId::setSigner()` и должен реализовывать
+`\Esia\Signer\SignerInterface`. Доступны следующие реализации:
+
+| Сигнер | Механизм | Требования |
+| --- | --- | --- |
+| `\Esia\Signer\SignerPKCS7` | Нативный `openssl_pkcs7_sign()` | Стандартный PHP с `ext-openssl`. **Не умеет ГОСТ** в обычной сборке OpenSSL — подходит только для тестов/RSA. |
+| `\Esia\Signer\CliSignerPKCS7` | Вызов `openssl smime -engine gost` | OpenSSL, собранный с GOST-движком (`libengine-gost-openssl1.1`), в `PATH`. Ключ и сертификат ГОСТ в PEM. |
+| `\Esia\Signer\CliCryptoProSigner` | Вызов утилиты `cryptcp` | Установленный **КриптоПро CSP** с утилитой `cryptcp`. Сертификат ГОСТ в хранилище CSP, указывается по SHA-1 отпечатку. |
+| `\Esia\Signer\CryptoProSigner` | PHP-расширение КриптоПро (`\CPStore`/`\CPSigner`) | Проприетарное PHP-расширение КриптоПро. Сертификат ГОСТ в хранилище `My` текущего пользователя. |
+
+Пример с CLI-сигнером ГОСТ (OpenSSL + GOST-движок):
+
+```php
+$esia->setSigner(new \Esia\Signer\CliSignerPKCS7(
+    '/path/to/gost-cert.pem',
+    '/path/to/gost-key.pem',
+    'key-password',
+    '/tmp'
+));
+```
+
+Пример с КриптоПро через утилиту `cryptcp` (отпечаток — SHA-1 сертификата в
+хранилище CSP):
+
+```php
+$esia->setSigner(new \Esia\Signer\CliCryptoProSigner(
+    '/opt/cprocsp/bin/amd64/cryptcp', // путь до cryptcp
+    '745187e5c161cd2e3130d886f9df4492fa270685', // отпечаток сертификата
+    'pin', // PIN контейнера (если задан)
+    '/tmp' // каталог для временных файлов
+));
+```
+
+Пример с КриптоПро через PHP-расширение:
+
+```php
+$esia->setSigner(new \Esia\Signer\CryptoProSigner(
+    '745187e5c161cd2e3130d886f9df4492fa270685', // отпечаток сертификата
+    'pin' // PIN контейнера (если задан)
+));
+```
+
+Все сигнеры поддерживают PSR-3 логгер через `setLogger()`.
+
 
 
 Токен - jwt токен которые вы получаете от ЕСИА для дальнейшего взаимодействия

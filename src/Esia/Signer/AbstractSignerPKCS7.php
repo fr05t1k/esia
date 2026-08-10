@@ -17,6 +17,7 @@ use Psr\Log\NullLogger;
 abstract class AbstractSignerPKCS7
 {
     use LoggerAwareTrait;
+    use UrlSafeSignatureTrait;
 
     /**
      * @param string $certPath Path to the certificate
@@ -70,13 +71,5 @@ abstract class AbstractSignerPKCS7
         } catch (Exception $e) {
             throw new SignFailException('Cannot generate random string', 0, $e);
         }
-    }
-
-    /**
-     * Url safe for base64
-     */
-    protected function urlSafe(string $string): string
-    {
-        return rtrim(strtr(trim($string), '+/', '-_'), '=');
     }
 }
