@@ -40,6 +40,21 @@ openssl smime -engine gost -verify -binary -inform DER -noverify \
   -in <signature.der> -content <message>
 ```
 
+## JWT fixtures (`jwt-signing-key.pem`, `jwt-signing-pub.pem`)
+
+A committed RSA-2048 key pair used to mint signed JWT access-token fixtures for
+offline token/claim-validation tests (see `tests/unit/Support/JwtFixture.php`).
+The **private** key signs test tokens; the **public** key is fed to the
+validator via `OpenSslSignatureVerifier`. Tokens are minted at runtime (not
+committed) so time-based claims (`exp`/`nbf`/`iat`) stay meaningful and never
+expire. This material is for tests only and is unrelated to ESIA.
+
+```sh
+# regenerate an equivalent pair
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out jwt-signing-key.pem
+openssl pkey -in jwt-signing-key.pem -pubout -out jwt-signing-pub.pem
+```
+
 ## `non_readable_file`
 
 An intentionally empty file whose mode is set to `000` in CI
