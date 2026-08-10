@@ -9,7 +9,6 @@ use Esia\OpenId;
 use Esia\Signer\CliSignerPKCS7;
 use Nyholm\Psr7\Response;
 
-
 class OpenIdCliOpensslTest extends OpenIdTest
 {
     /**
