@@ -21,15 +21,24 @@
     "php": "^8.3",
     "ext-json": "*",
     "ext-openssl": "*",
-    "guzzlehttp/guzzle": "^7.9",
     "psr/log": "^1.1 || ^2.0 || ^3.0",
     "psr/http-message": "^1.1 || ^2.0",
-    "psr/http-client": "^1.0"
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0",
+    "php-http/discovery": "^1.19"
   },
   "require-dev": {
     "codeception/codeception": "^5.1",
     "codeception/module-asserts": "^3.0",
-    "phpstan/phpstan": "^2.0"
+    "phpstan/phpstan": "^2.0",
+    "nyholm/psr7": "^1.8",
+    "php-http/mock-client": "^1.6",
+    "guzzlehttp/guzzle": "^7.9"
+  },
+  "suggest": {
+    "guzzlehttp/guzzle": "PSR-18 HTTP client and PSR-17 factories (^7.9)",
+    "symfony/http-client": "Alternative PSR-18 HTTP client",
+    "nyholm/psr7": "Lightweight PSR-7/PSR-17 message and factory implementation"
   },
   "config": {
     "platform": {
@@ -37,7 +46,8 @@
     },
     "sort-packages": true,
     "allow-plugins": {
-      "codeception/c3": true
+      "codeception/c3": true,
+      "php-http/discovery": true
     }
   }
 }

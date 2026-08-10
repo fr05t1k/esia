@@ -6,14 +6,12 @@ use Codeception\Test\Unit;
 use Esia\Config;
 use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\InvalidConfigurationException;
-use Esia\Http\GuzzleHttpClient;
 use Esia\OpenId;
 use Esia\Signer\Exceptions\SignFailException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
+use Http\Mock\Client as MockClient;
+use Nyholm\Psr7\Response;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\ResponseInterface;
 
 class OpenIdTest extends Unit
 {
@@ -182,18 +180,37 @@ class OpenIdTest extends Unit
     }
 
     /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testForbiddenResponseThrows(): void
+    {
+        $config = new Config($this->config);
+        $config->setOid('123');
+        $config->setToken('test');
+
+        $client = $this->buildClientWithResponses([
+            new Response(403, [], ''),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        $this->expectException(\Esia\Exceptions\ForbiddenException::class);
+        $openId->getPersonInfo();
+    }
+
+    /**
      * Client with prepared responses
      *
-     * @param array $responses
+     * @param ResponseInterface[] $responses
      * @return ClientInterface
      */
     protected function buildClientWithResponses(array $responses): ClientInterface
     {
-        $mock = new MockHandler($responses);
+        $client = new MockClient();
+        foreach ($responses as $response) {
+            $client->addResponse($response);
+        }
 
-        $handler = HandlerStack::create($mock);
-        $guzzleClient = new Client(['handler' => $handler]);
-
-        return new GuzzleHttpClient($guzzleClient);
+        return $client;
     }
 }

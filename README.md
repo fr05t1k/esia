@@ -9,6 +9,23 @@
 # Требования
 PHP >= 8.3, расширения `ext-openssl` и `ext-json`.
 
+Библиотека не привязана к конкретному HTTP-клиенту и использует стандарты
+PSR-18 (HTTP Client) и PSR-17 (HTTP Factories). Необходимо установить любую
+их реализацию, например Guzzle:
+
+```
+composer require guzzlehttp/guzzle
+```
+
+Подойдёт любой PSR-18 клиент (Guzzle, Symfony HTTP Client, и т.д.) вместе с
+PSR-17 фабрикой (`nyholm/psr7`, `guzzlehttp/psr7` и т.п.). Реализация
+находится автоматически (через `php-http/discovery`), либо её можно передать
+явно в конструктор `OpenId`:
+
+```php
+$esia = new \Esia\OpenId($config, $psr18Client, $psr17RequestFactory, $psr17StreamFactory);
+```
+
 # Обратная совместимость
 Начиная с этой версии значения по умолчанию обновлены под актуальный API ЕСИА
 (Методические рекомендации): эндпоинты `aas/oauth2/v2/ac` и `aas/oauth2/v3/te`,
