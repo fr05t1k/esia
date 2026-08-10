@@ -106,6 +106,11 @@ class OpenId
             'timestamp' => $timestamp,
         ];
 
+        $clientCertificateHash = $this->config->getClientCertificateHash();
+        if ($clientCertificateHash !== '') {
+            $params['client_certificate_hash'] = $clientCertificateHash;
+        }
+
         $request = http_build_query($params);
 
         return sprintf($url, $request);
@@ -160,6 +165,11 @@ class OpenId
             'token_type' => 'Bearer',
             'refresh_token' => $state,
         ];
+
+        $clientCertificateHash = $this->config->getClientCertificateHash();
+        if ($clientCertificateHash !== '') {
+            $body['client_certificate_hash'] = $clientCertificateHash;
+        }
 
         $payload = $this->sendRequest(
             new Request(

@@ -61,6 +61,7 @@ class ConfigTest extends Unit
                     'personUrlPath' => 'test',
                     'logoutUrlPath' => 'test',
                     'privateKeyPassword' => 'test',
+                    'clientCertificateHash' => 'ABCDEF0123456789',
                     'oid' => 'test',
                     'responseType' => 'test',
                     'accessType' => 'test',
@@ -163,6 +164,26 @@ class ConfigTest extends Unit
     }
 
     /**
+     * The default token endpoint must be the current ESIA v3 path over HTTPS.
+     *
+     * @throws InvalidConfigurationException
+     */
+    public function testGetTokenUrlDefault(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+        ]);
+
+        $this->assertSame(
+            'https://esia-portal1.test.gosuslugi.ru/aas/oauth2/v3/te',
+            $config->getTokenUrl()
+        );
+    }
+
+    /**
      * @throws InvalidConfigurationException
      */
     public function testGetCodeUrl(): void
@@ -178,6 +199,26 @@ class ConfigTest extends Unit
         ]);
 
         $this->assertSame('https://google.com/test', $config->getCodeUrl());
+    }
+
+    /**
+     * The default authorization-code endpoint must be the current ESIA v2 path over HTTPS.
+     *
+     * @throws InvalidConfigurationException
+     */
+    public function testGetCodeUrlDefault(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+        ]);
+
+        $this->assertSame(
+            'https://esia-portal1.test.gosuslugi.ru/aas/oauth2/v2/ac',
+            $config->getCodeUrl()
+        );
     }
 
     /**
@@ -232,5 +273,36 @@ class ConfigTest extends Unit
         ]);
 
         $this->assertSame('https://google.com/test', $config->getLogoutUrl());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public function testGetClientCertificateHash(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+            'clientCertificateHash' => 'ABCDEF0123456789',
+        ]);
+
+        $this->assertSame('ABCDEF0123456789', $config->getClientCertificateHash());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public function testGetClientCertificateHashDefaultsToEmpty(): void
+    {
+        $config = new Config([
+            'clientId' => 'test',
+            'redirectUrl' => 'http://google.com',
+            'privateKeyPath' => '/tmp',
+            'certPath' => '/tmp',
+        ]);
+
+        $this->assertSame('', $config->getClientCertificateHash());
     }
 }
