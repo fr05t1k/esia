@@ -199,6 +199,104 @@ class OpenIdTest extends Unit
     }
 
     /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetTokenValidatesJwtWhenValidatorSet(): void
+    {
+        $keyResource = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        openssl_pkey_export($keyResource, $privateKey);
+        $certificate = openssl_pkey_get_details($keyResource)['key'];
+
+        $oid = 456;
+        $token = $this->signJwt($privateKey, [
+            'iss' => 'http://esia.gosuslugi.ru/',
+            'aud' => 'INSP03211',
+            'exp' => time() + 3600,
+            'urn:esia:sbj_id' => $oid,
+        ]);
+
+        $config = new Config($this->config);
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], json_encode(['access_token' => $token])),
+        ]);
+        $openId = new OpenId($config, $client);
+        $openId->setSigner($this->stubSigner());
+        $openId->setTokenValidator(new \Esia\Token\JwtValidator(
+            new \Esia\Token\OpenSslSignatureVerifier($certificate),
+            'http://esia.gosuslugi.ru/',
+            'INSP03211'
+        ));
+
+        self::assertSame($token, $openId->getToken('code'));
+        self::assertSame((string) $oid, $openId->getConfig()->getOid());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetTokenRejectsTamperedJwtWhenValidatorSet(): void
+    {
+        $keyResource = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        openssl_pkey_export($keyResource, $privateKey);
+        $certificate = openssl_pkey_get_details($keyResource)['key'];
+
+        $token = $this->signJwt($privateKey, [
+            'iss' => 'http://esia.gosuslugi.ru/',
+            'aud' => 'INSP03211',
+            'exp' => time() + 3600,
+            'urn:esia:sbj_id' => 456,
+        ]);
+        [$header, $payload] = explode('.', $token);
+        $tampered = $header . '.' . $payload . '.' . rtrim(strtr(base64_encode('forged'), '+/', '-_'), '=');
+
+        $config = new Config($this->config);
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], json_encode(['access_token' => $tampered])),
+        ]);
+        $openId = new OpenId($config, $client);
+        $openId->setSigner($this->stubSigner());
+        $openId->setTokenValidator(new \Esia\Token\JwtValidator(
+            new \Esia\Token\OpenSslSignatureVerifier($certificate),
+            'http://esia.gosuslugi.ru/',
+            'INSP03211'
+        ));
+
+        $this->expectException(\Esia\Exceptions\SignatureInvalidException::class);
+        $openId->getToken('code');
+    }
+
+    private function stubSigner(): \Esia\Signer\SignerInterface
+    {
+        return new class implements \Esia\Signer\SignerInterface {
+            public function sign(string $message): string
+            {
+                return 'signed';
+            }
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $claims
+     */
+    private function signJwt(string $privateKey, array $claims): string
+    {
+        $encode = static fn (string $data): string => rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+        $header = $encode((string) json_encode(['typ' => 'JWT', 'alg' => 'RS256']));
+        $payload = $encode((string) json_encode($claims));
+        openssl_sign($header . '.' . $payload, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+
+        return $header . '.' . $payload . '.' . $encode($signature);
+    }
+
+    /**
      * Client with prepared responses
      *
      * @param ResponseInterface[] $responses

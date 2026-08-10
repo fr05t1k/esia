@@ -112,7 +112,42 @@ $documentInfo = $esia->getDocInfo();
 
 `tmpPath` - путь до дериктории где будет проходить подпись (должна быть доступна для записи).
 
-# Токен и oid
+`esiaCertPath` - по умолчанию: пусто. Путь до сертификата подписи ЕСИА (для продуктивной среды — GOST-2012). Если задан, полученный JWT автоматически проверяется: подпись, `exp`/`nbf`/`iat`, `iss` и аудитория (`aud`/`client_id`). Если не задан, проверка пропускается (обратная совместимость).
+
+`esiaTokenIssuer` - по умолчанию: пусто. Ожидаемое значение claim `iss` в токене. Если не задано, `iss` не проверяется.
+
+`tokenLeeway` - по умолчанию: `60`. Допустимое отклонение (в секундах) при проверке временных claim'ов (`exp`, `nbf`, `iat`) для компенсации рассинхронизации часов.
+
+## Проверка JWT (подпись и claim'ы)
+
+По умолчанию библиотека не проверяет подпись полученного от ЕСИА токена — это
+сохраняет обратную совместимость. Чтобы включить проверку, укажите путь до
+сертификата подписи ЕСИА через `esiaCertPath` (и, при необходимости,
+`esiaTokenIssuer`):
+
+```php
+$config = new \Esia\Config([
+    // ... остальные параметры
+    'esiaCertPath'    => '/path/to/esia-signing-cert.pem',
+    'esiaTokenIssuer' => 'http://esia.gosuslugi.ru/',
+]);
+$esia = new \Esia\OpenId($config);
+
+// getToken выбросит наследника InvalidTokenException при некорректном токене:
+// SignatureInvalidException — неверная подпись,
+// TokenExpiredException     — истёк срок (exp) или ещё не действителен (nbf),
+// InvalidClaimException     — неверный iss / аудитория (aud/client_id).
+$token = $esia->getToken($_GET['code']);
+```
+
+Проверка сделана подключаемой (pluggable): вы можете передать собственную
+реализацию `\Esia\Token\TokenValidatorInterface` (например, с проверкой
+GOST-подписи через CryptoPro) через `\Esia\OpenId::setTokenValidator()`.
+Стандартная реализация `\Esia\Token\JwtValidator` проверяет подпись через
+`\Esia\Token\OpenSslSignatureVerifier` (RSA из коробки; алгоритмы GOST-2012 —
+при наличии GOST-движка в OpenSSL).
+
+
 
 Токен - jwt токен которые вы получаете от ЕСИА для дальнейшего взаимодействия
 

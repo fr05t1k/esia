@@ -22,6 +22,23 @@ class Config
     private string $clientCertificateHash = '';
 
     /**
+     * Path to the ESIA signing certificate used to validate the JWT access
+     * token. When set, the token is validated automatically after it is
+     * fetched. When null, token validation is skipped (backward compatible).
+     */
+    private ?string $esiaCertPath = null;
+
+    /**
+     * Expected `iss` claim of the access token. Null skips the issuer check.
+     */
+    private ?string $esiaTokenIssuer = null;
+
+    /**
+     * Allowed clock skew (in seconds) when validating time-based claims.
+     */
+    private int $tokenLeeway = 60;
+
+    /**
      * @var string[]
      */
     private array $scope = [
@@ -77,6 +94,9 @@ class Config
         $this->logoutUrlPath = $config['logoutUrlPath'] ?? $this->logoutUrlPath;
         $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
         $this->clientCertificateHash = $config['clientCertificateHash'] ?? $this->clientCertificateHash;
+        $this->esiaCertPath = $config['esiaCertPath'] ?? $this->esiaCertPath;
+        $this->esiaTokenIssuer = $config['esiaTokenIssuer'] ?? $this->esiaTokenIssuer;
+        $this->tokenLeeway = (int) ($config['tokenLeeway'] ?? $this->tokenLeeway);
         $this->oid = $config['oid'] ?? $this->oid;
         $scope = $config['scope'] ?? $this->scope;
         if (!is_array($scope)) {
@@ -113,6 +133,21 @@ class Config
     public function getClientCertificateHash(): string
     {
         return $this->clientCertificateHash;
+    }
+
+    public function getEsiaCertPath(): ?string
+    {
+        return $this->esiaCertPath;
+    }
+
+    public function getEsiaTokenIssuer(): ?string
+    {
+        return $this->esiaTokenIssuer;
+    }
+
+    public function getTokenLeeway(): int
+    {
+        return $this->tokenLeeway;
     }
 
     public function getCertPath(): string
