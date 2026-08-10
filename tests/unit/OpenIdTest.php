@@ -373,7 +373,7 @@ class OpenIdTest extends Unit
 
     private function stubSigner(): \Esia\Signer\SignerInterface
     {
-        return new class implements \Esia\Signer\SignerInterface {
+        return new class () implements \Esia\Signer\SignerInterface {
             public function sign(string $message): string
             {
                 return 'signed';

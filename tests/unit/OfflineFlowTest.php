@@ -240,7 +240,7 @@ class OfflineFlowTest extends Unit
 
     private function stubSigner(): SignerInterface
     {
-        return new class implements SignerInterface {
+        return new class () implements SignerInterface {
             public function sign(string $message): string
             {
                 return 'signed';
