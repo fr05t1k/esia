@@ -121,13 +121,21 @@ class OpenId
      *     <a href="<?=$esia->buildUrl()?>">Login</a>
      * ```
      *
+     * An explicit `$state` can be passed to correlate the request (e.g. to tell
+     * apart several concurrent login windows). When omitted, the state stored
+     * in the config is reused, or a new one is generated and persisted. The
+     * effective state is always available via {@see Config::getState()}.
+     *
      * @return string
      * @throws SignFailException
      */
-    public function buildUrl()
+    public function buildUrl(?string $state = null)
     {
         $timestamp = $this->getTimeStamp();
-        $state = $this->buildState();
+        if ($state !== null && $state !== '') {
+            $this->config->setState($state);
+        }
+        $state = $this->resolveState();
         $message = $this->config->getScopeString()
             . $timestamp
             . $this->config->getClientId()
@@ -186,7 +194,7 @@ class OpenId
     public function getToken(string $code): string
     {
         $timestamp = $this->getTimeStamp();
-        $state = $this->buildState();
+        $state = $this->resolveState();
 
         $clientSecret = $this->signer->sign(
             $this->config->getScopeString()
@@ -325,6 +333,57 @@ class OpenId
     }
 
     /**
+     * Fetch the roles/organizations the current person belongs to.
+     *
+     * Uses the `rs/prns/{oid}/roles` endpoint which returns the memberships
+     * inline (organization oid, short/full name, ОГРН, chief/admin flags, …),
+     * so no extra request per organization is needed.
+     *
+     * You must collect the person token before calling this method.
+     *
+     * @return array<int, array<string, mixed>> List of role/organization elements
+     * @throws Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function getRoles(): array
+    {
+        $url = $this->config->getPersonUrl() . '/roles';
+        $payload = $this->sendRequest($this->requestFactory->createRequest('GET', $url));
+
+        if (!empty($payload['size']) && isset($payload['elements']) && is_array($payload['elements'])) {
+            return $payload['elements'];
+        }
+
+        return [];
+    }
+
+    /**
+     * Fetch detailed information about the organizations the current person
+     * belongs to.
+     *
+     * Uses the `rs/prns/{oid}/orgs` collection, whose elements are links to
+     * each organization resource; every link is resolved into the full
+     * organization payload.
+     *
+     * You must collect the person token before calling this method.
+     *
+     * @return array<int, array<string, mixed>> List of organization payloads
+     * @throws Exceptions\InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function getOrganizations(): array
+    {
+        $url = $this->config->getPersonUrl() . '/orgs';
+        $payload = $this->sendRequest($this->requestFactory->createRequest('GET', $url));
+
+        if (!empty($payload['size']) && isset($payload['elements']) && is_array($payload['elements'])) {
+            return $this->collectArrayElements($payload['elements']);
+        }
+
+        return [];
+    }
+
+    /**
      * This method can iterate on each element
      * and fetch entities from esia by url
      *
@@ -395,6 +454,25 @@ class OpenId
     private function getTimeStamp(): string
     {
         return date('Y.m.d H:i:s O');
+    }
+
+    /**
+     * Resolve the OAuth state: reuse the one already stored in the config
+     * (e.g. injected by the integrator or produced by a previous call) or
+     * generate a fresh one and persist it so it can be retrieved later via
+     * {@see Config::getState()}.
+     *
+     * @throws SignFailException
+     */
+    private function resolveState(): string
+    {
+        $state = $this->config->getState();
+        if ($state === '') {
+            $state = $this->buildState();
+            $this->config->setState($state);
+        }
+
+        return $state;
     }
 
     /**
