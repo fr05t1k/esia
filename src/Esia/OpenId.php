@@ -25,6 +25,7 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
@@ -61,19 +62,28 @@ class OpenId
         Config $config,
         ?ClientInterface $client = null,
         ?RequestFactoryInterface $requestFactory = null,
-        ?StreamFactoryInterface $streamFactory = null
+        ?StreamFactoryInterface $streamFactory = null,
+        ?SignerInterface $signer = null,
+        ?LoggerInterface $logger = null
     ) {
         $this->config = $config;
         $this->client = $client ?? Psr18ClientDiscovery::find();
         $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
         $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
-        $this->logger = new NullLogger();
-        $this->signer = new SignerPKCS7(
-            $config->getCertPath(),
-            $config->getPrivateKeyPath(),
-            $config->getPrivateKeyPassword(),
-            $config->getTmpPath()
-        );
+        $this->logger = $logger ?? new NullLogger();
+
+        if ($signer !== null) {
+            $this->signer = $signer;
+        } else {
+            $defaultSigner = new SignerPKCS7(
+                $config->getCertPath(),
+                $config->getPrivateKeyPath(),
+                $config->getPrivateKeyPassword(),
+                $config->getTmpPath()
+            );
+            $defaultSigner->setLogger($this->logger);
+            $this->signer = $defaultSigner;
+        }
 
         $esiaCertPath = $config->getEsiaCertPath();
         if ($esiaCertPath !== null && $esiaCertPath !== '') {

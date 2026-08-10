@@ -8,10 +8,12 @@ use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\InvalidConfigurationException;
 use Esia\OpenId;
 use Esia\Signer\Exceptions\SignFailException;
+use Esia\Signer\SignerInterface;
 use Http\Mock\Client as MockClient;
 use Nyholm\Psr7\Response;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Log\AbstractLogger;
 
 class OpenIdTest extends Unit
 {
@@ -320,6 +322,90 @@ class OpenIdTest extends Unit
 
         $openId->getToken('test');
         self::assertSame($injectedState, $config->getState());
+    }
+
+    /**
+     * The signer passed to the constructor must be used instead of the default
+     * one (DI, see #76).
+     *
+     * @throws InvalidConfigurationException
+     * @throws SignFailException
+     */
+    public function testConstructorInjectsSigner(): void
+    {
+        $config = new Config($this->config);
+
+        $signer = new class () implements SignerInterface {
+            public bool $called = false;
+
+            public function sign(string $message): string
+            {
+                $this->called = true;
+
+                return 'injected-signature';
+            }
+        };
+
+        $openId = new OpenId($config, null, null, null, $signer);
+        $url = $openId->buildUrl();
+
+        self::assertTrue($signer->called);
+        self::assertStringContainsString('client_secret=injected-signature', $url);
+    }
+
+    /**
+     * The logger passed to the constructor must be used (DI, see #76).
+     *
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testConstructorInjectsLogger(): void
+    {
+        $config = new Config($this->config);
+
+        $logger = new class () extends AbstractLogger {
+            /** @var array<int, string> */
+            public array $messages = [];
+
+            public function log($level, $message, array $context = []): void
+            {
+                $this->messages[] = (string) $message;
+            }
+        };
+
+        $oid = '123';
+        $oidBase64 = base64_encode('{ "urn:esia:sbj_id" : ' . $oid . '}');
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{ "access_token": "test.' . $oidBase64 . '.test"}'),
+        ]);
+        $openId = new OpenId($config, $client, null, null, null, $logger);
+
+        $openId->getToken('test');
+        self::assertNotEmpty($logger->messages);
+    }
+
+    /**
+     * Existing setter-based configuration must keep working (no BC break).
+     *
+     * @throws InvalidConfigurationException
+     * @throws SignFailException
+     */
+    public function testSetSignerStillWorks(): void
+    {
+        $config = new Config($this->config);
+
+        $signer = new class () implements SignerInterface {
+            public function sign(string $message): string
+            {
+                return 'setter-signature';
+            }
+        };
+
+        $openId = new OpenId($config);
+        $openId->setSigner($signer);
+        $url = $openId->buildUrl();
+
+        self::assertStringContainsString('client_secret=setter-signature', $url);
     }
 
     /**
