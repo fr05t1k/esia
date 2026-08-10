@@ -382,8 +382,10 @@ class OpenIdTest extends Unit
     }
 
     /**
-     * Generate a self-signed RSA certificate, write it to the output dir and
-     * return [certPath, privateKeyPem].
+     * Generate an RSA key pair, write its public key (PEM) to the output dir
+     * and return [publicKeyPath, privateKeyPem]. A bare public key is enough
+     * for {@see OpenSslSignatureVerifier} and avoids CSR/X.509 signing, which
+     * is unavailable under the GOST-configured OpenSSL used in CI.
      *
      * @return array{string, string}
      */
@@ -393,13 +395,11 @@ class OpenIdTest extends Unit
             'private_key_bits' => 2048,
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
         ]);
-        $csr = openssl_csr_new(['commonName' => 'ESIA'], $keyResource);
-        $x509 = openssl_csr_sign($csr, null, $keyResource, 1);
-        openssl_x509_export($x509, $certPem);
         openssl_pkey_export($keyResource, $privateKey);
+        $publicKey = openssl_pkey_get_details($keyResource)['key'];
 
-        $certPath = codecept_output_dir('esia-cert-' . uniqid('', true) . '.pem');
-        file_put_contents($certPath, $certPem);
+        $certPath = codecept_output_dir('esia-pub-' . uniqid('', true) . '.pem');
+        file_put_contents($certPath, $publicKey);
 
         return [$certPath, $privateKey];
     }
