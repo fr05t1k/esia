@@ -6,11 +6,15 @@ namespace Esia;
 
 use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\ForbiddenException;
+use Esia\Exceptions\InvalidClaimException;
 use Esia\Exceptions\RequestFailException;
 use Esia\Signer\Exceptions\CannotGenerateRandomIntException;
 use Esia\Signer\Exceptions\SignFailException;
 use Esia\Signer\SignerInterface;
 use Esia\Signer\SignerPKCS7;
+use Esia\Token\JwtValidator;
+use Esia\Token\OpenSslSignatureVerifier;
+use Esia\Token\TokenValidatorInterface;
 use Exception;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
@@ -32,6 +36,12 @@ class OpenId
     use LoggerAwareTrait;
 
     private SignerInterface $signer;
+
+    /**
+     * Validator for the JWT access token. Null means validation is disabled
+     * (backward compatible default).
+     */
+    private ?TokenValidatorInterface $tokenValidator = null;
 
     /**
      * Http Client
@@ -64,6 +74,28 @@ class OpenId
             $config->getPrivateKeyPassword(),
             $config->getTmpPath()
         );
+
+        $esiaCertPath = $config->getEsiaCertPath();
+        if ($esiaCertPath !== null && $esiaCertPath !== '') {
+            $this->tokenValidator = new JwtValidator(
+                OpenSslSignatureVerifier::fromFile($esiaCertPath),
+                $config->getEsiaTokenIssuer(),
+                $config->getClientId(),
+                $config->getTokenLeeway()
+            );
+        }
+    }
+
+    /**
+     * Replace the default JWT token validator or enable validation.
+     *
+     * When a validator is set, {@see OpenId::getToken()} verifies the token
+     * signature and claims before accepting it. This makes validation
+     * pluggable so integrators can supply the current ESIA certificate.
+     */
+    public function setTokenValidator(?TokenValidatorInterface $tokenValidator): void
+    {
+        $this->tokenValidator = $tokenValidator;
     }
 
     /**
@@ -191,12 +223,23 @@ class OpenId
         $this->logger->debug('Payload: ', $payload);
 
         $token = $payload['access_token'];
-        $this->config->setToken($token);
 
         # get object id from token
         $chunks = explode('.', $token);
-        $payload = json_decode($this->base64UrlSafeDecode($chunks[1]), true);
-        $this->config->setOid((string) $payload['urn:esia:sbj_id']);
+        if ($this->tokenValidator !== null) {
+            $claims = $this->tokenValidator->validate($token);
+        } else {
+            $claims = json_decode($this->base64UrlSafeDecode($chunks[1] ?? ''), true);
+        }
+
+        if (!is_array($claims) || !isset($claims['urn:esia:sbj_id'])) {
+            throw new InvalidClaimException('The token does not contain the subject id (urn:esia:sbj_id)');
+        }
+
+        // Only accept the token into client state once it has been validated
+        // and the subject id has been extracted.
+        $this->config->setToken($token);
+        $this->config->setOid((string) $claims['urn:esia:sbj_id']);
 
         return $token;
     }
