@@ -43,7 +43,7 @@ final class CliCryptoProSigner implements SignerInterface
         $this->tempDir = $tempDir ?? sys_get_temp_dir();
         $this->logger = new NullLogger();
 
-        if (!file_exists($this->tempDir)) {
+        if (!is_dir($this->tempDir)) {
             throw new NoSuchTmpDirException('Temporary folder is not found');
         }
         if (!is_writable($this->tempDir)) {
@@ -60,9 +60,13 @@ final class CliCryptoProSigner implements SignerInterface
         if ($messageFile === false) {
             throw new SignFailException('Cannot create a temporary file for signing');
         }
-        file_put_contents($messageFile, $message);
 
         try {
+            $bytes = file_put_contents($messageFile, $message);
+            if ($bytes === false || $bytes !== strlen($message)) {
+                throw new SignFailException('Cannot write the message to the temporary file');
+            }
+
             return $this->signFile($messageFile);
         } finally {
             if (file_exists($messageFile)) {
@@ -76,8 +80,10 @@ final class CliCryptoProSigner implements SignerInterface
      */
     private function signFile(string $messageFile): string
     {
+        // ESIA's client_secret must be a detached PKCS#7 signature; -base64
+        // makes cryptcp emit base64 text instead of the default binary DER.
         $command = escapeshellarg($this->toolPath)
-            . ' -signf -dir ' . escapeshellarg($this->tempDir)
+            . ' -signf -detached -base64 -dir ' . escapeshellarg($this->tempDir)
             . ' -cert -thumbprint ' . escapeshellarg($this->thumbprint);
         if ($this->pin !== null && $this->pin !== '') {
             $command .= ' -pin ' . escapeshellarg($this->pin);
