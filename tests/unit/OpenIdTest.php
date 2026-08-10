@@ -284,6 +284,25 @@ class OpenIdTest extends Unit
     }
 
     /**
+     * Passing an explicit state to buildUrl() (as in the original PR #63) must
+     * embed it in the URL and persist it so it can be correlated on return.
+     *
+     * @throws InvalidConfigurationException
+     * @throws SignFailException
+     */
+    public function testBuildUrlWithExplicitState(): void
+    {
+        $config = new Config($this->config);
+        $openId = new OpenId($config);
+
+        $state = '47e1f1e9-8b56-4666-ac02-d1408408e5f2';
+        $url = $openId->buildUrl($state);
+
+        self::assertStringContainsString($state, $url);
+        self::assertSame($state, $config->getState());
+    }
+
+    /**
      * @throws InvalidConfigurationException
      * @throws AbstractEsiaException
      */

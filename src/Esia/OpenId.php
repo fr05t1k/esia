@@ -121,12 +121,20 @@ class OpenId
      *     <a href="<?=$esia->buildUrl()?>">Login</a>
      * ```
      *
+     * An explicit `$state` can be passed to correlate the request (e.g. to tell
+     * apart several concurrent login windows). When omitted, the state stored
+     * in the config is reused, or a new one is generated and persisted. The
+     * effective state is always available via {@see Config::getState()}.
+     *
      * @return string
      * @throws SignFailException
      */
-    public function buildUrl()
+    public function buildUrl(?string $state = null)
     {
         $timestamp = $this->getTimeStamp();
+        if ($state !== null && $state !== '') {
+            $this->config->setState($state);
+        }
         $state = $this->resolveState();
         $message = $this->config->getScopeString()
             . $timestamp
