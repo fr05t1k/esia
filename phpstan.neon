@@ -2,4 +2,8 @@ parameters:
     level: 5
     paths:
         - src
+    excludePaths:
+        # Relies on the proprietary CryptoPro PHP extension (\CPStore, \CPSigner,
+        # …) which has no stubs and is unavailable in CI.
+        - src/Esia/Signer/CryptoProSigner.php
     treatPhpDocTypesAsCertain: false
