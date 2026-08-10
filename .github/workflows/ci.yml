@@ -55,3 +55,26 @@ jobs:
 
       - name: PHPStan
         run: vendor/bin/phpstan analyse --no-progress
+
+  gost-roundtrip:
+    runs-on: ubuntu-24.04
+    name: GOST signing round-trip
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Setup GOST OpenSSL engine
+        run: |
+          sudo apt-get install -y libengine-gost-openssl1.1
+          sudo cp tests/openssl.cnf /usr/lib/ssl/openssl.cnf
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: openssl
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction
+
+      - name: Sign and verify a GOST-2012 signature
+        run: vendor/bin/codecept run -g gost
