@@ -199,6 +199,25 @@ class OpenIdTest extends Unit
      * @throws InvalidConfigurationException
      * @throws AbstractEsiaException
      */
+    public function testGetRolesHandlesMalformedPayload(): void
+    {
+        $config = new Config($this->config);
+        $config->setOid('123');
+        $config->setToken('test');
+
+        // size present but elements missing must not raise a notice.
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{"size": 3}'),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        self::assertSame([], $openId->getRoles());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
     public function testGetOrganizations(): void
     {
         $config = new Config($this->config);

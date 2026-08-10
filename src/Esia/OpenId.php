@@ -342,7 +342,7 @@ class OpenId
         $url = $this->config->getPersonUrl() . '/roles';
         $payload = $this->sendRequest($this->requestFactory->createRequest('GET', $url));
 
-        if ($payload && isset($payload['size']) && $payload['size'] > 0) {
+        if (!empty($payload['size']) && isset($payload['elements']) && is_array($payload['elements'])) {
             return $payload['elements'];
         }
 
@@ -368,7 +368,7 @@ class OpenId
         $url = $this->config->getPersonUrl() . '/orgs';
         $payload = $this->sendRequest($this->requestFactory->createRequest('GET', $url));
 
-        if ($payload && isset($payload['size']) && $payload['size'] > 0) {
+        if (!empty($payload['size']) && isset($payload['elements']) && is_array($payload['elements'])) {
             return $this->collectArrayElements($payload['elements']);
         }
 
