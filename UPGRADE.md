@@ -139,7 +139,7 @@ $config = new \Esia\Config([
 $config = new \Esia\Config([
     // ...
     'portalUrl'             => 'https://esia.gosuslugi.ru/',
-    'clientCertificateHash' => '<hex-hash>', // из утилиты ЕСИА calc_cert_hash
+    'clientCertificateHash' => '<hex-hash>', // fingerprint сертификата (SHA-256)
 ]);
 ```
 
