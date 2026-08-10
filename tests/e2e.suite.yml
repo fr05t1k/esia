@@ -1,0 +1,9 @@
+# Codeception Test Suite Configuration
+#
+# Suite for end-to-end tests driving the full HTTP flow against a local
+# mock ESIA server (see tests/_support/mock_esia_router.php).
+
+actor: E2eTester
+modules:
+    enabled:
+        - Asserts

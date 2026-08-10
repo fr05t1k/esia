@@ -24,7 +24,8 @@
     "friendsofphp/php-cs-fixer": "^3.64",
     "nyholm/psr7": "^1.8",
     "php-http/mock-client": "^1.6",
-    "phpstan/phpstan": "^2.0"
+    "phpstan/phpstan": "^2.0",
+    "symfony/http-client": "^6.4 || ^7.0"
   },
   "suggest": {
     "guzzlehttp/guzzle": "PSR-18 HTTP client and PSR-17 factories (^7.9)",

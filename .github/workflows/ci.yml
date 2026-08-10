@@ -36,6 +36,7 @@ jobs:
       - name: Run tests
         run: |
           chmod 000 tests/_data/non_readable_file
+          vendor/bin/codecept build
           vendor/bin/codecept run
 
   static-analysis:
@@ -98,4 +99,6 @@ jobs:
         run: composer update --prefer-dist --no-interaction
 
       - name: Sign and verify a GOST-2012 signature
-        run: vendor/bin/codecept run -g gost
+        run: |
+          vendor/bin/codecept build
+          vendor/bin/codecept run -g gost
