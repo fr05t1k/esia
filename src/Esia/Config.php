@@ -13,12 +13,13 @@ class Config
     private ?string $privateKeyPath = null;
     private ?string $certPath = null;
 
-    private string $portalUrl = 'http://esia-portal1.test.gosuslugi.ru/';
-    private string $tokenUrlPath = 'aas/oauth2/te';
-    private string $codeUrlPath = 'aas/oauth2/ac';
+    private string $portalUrl = 'https://esia-portal1.test.gosuslugi.ru/';
+    private string $tokenUrlPath = 'aas/oauth2/v3/te';
+    private string $codeUrlPath = 'aas/oauth2/v2/ac';
     private string $personUrlPath = 'rs/prns';
     private string $logoutUrlPath = 'idp/ext/Logout';
     private string $privateKeyPassword = '';
+    private string $clientCertificateHash = '';
 
     /**
      * @var string[]
@@ -75,6 +76,7 @@ class Config
         $this->personUrlPath = $config['personUrlPath'] ?? $this->personUrlPath;
         $this->logoutUrlPath = $config['logoutUrlPath'] ?? $this->logoutUrlPath;
         $this->privateKeyPassword = $config['privateKeyPassword'] ?? $this->privateKeyPassword;
+        $this->clientCertificateHash = $config['clientCertificateHash'] ?? $this->clientCertificateHash;
         $this->oid = $config['oid'] ?? $this->oid;
         $scope = $config['scope'] ?? $this->scope;
         if (!is_array($scope)) {
@@ -106,6 +108,11 @@ class Config
     public function getPrivateKeyPassword(): string
     {
         return $this->privateKeyPassword;
+    }
+
+    public function getClientCertificateHash(): string
+    {
+        return $this->clientCertificateHash;
     }
 
     public function getCertPath(): string
