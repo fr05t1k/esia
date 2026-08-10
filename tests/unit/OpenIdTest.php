@@ -273,6 +273,104 @@ class OpenIdTest extends Unit
         $openId->getToken('code');
     }
 
+    /**
+     * Exercises the advertised opt-in path where validation is enabled purely
+     * through Config (esiaCertPath / esiaTokenIssuer), with no manual
+     * setTokenValidator() call.
+     *
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetTokenValidatesViaEsiaCertPathConfig(): void
+    {
+        [$certPath, $privateKey] = $this->writeCertFixture();
+
+        $oid = 789;
+        $token = $this->signJwt($privateKey, [
+            'iss' => 'http://esia.gosuslugi.ru/',
+            'aud' => 'INSP03211',
+            'exp' => time() + 3600,
+            'urn:esia:sbj_id' => $oid,
+        ]);
+
+        $config = new Config($this->config + [
+            'esiaCertPath' => $certPath,
+            'esiaTokenIssuer' => 'http://esia.gosuslugi.ru/',
+            'tokenLeeway' => 30,
+        ]);
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], json_encode(['access_token' => $token])),
+        ]);
+        $openId = new OpenId($config, $client);
+        $openId->setSigner($this->stubSigner());
+
+        self::assertSame($token, $openId->getToken('code'));
+        self::assertSame((string) $oid, $openId->getConfig()->getOid());
+    }
+
+    /**
+     * The audience for the auto-configured validator comes from clientId, so a
+     * token minted for a different audience must be rejected.
+     *
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetTokenViaConfigRejectsWrongAudience(): void
+    {
+        [$certPath, $privateKey] = $this->writeCertFixture();
+
+        $token = $this->signJwt($privateKey, [
+            'iss' => 'http://esia.gosuslugi.ru/',
+            'aud' => 'SOMEONE_ELSE',
+            'exp' => time() + 3600,
+            'urn:esia:sbj_id' => 1,
+        ]);
+
+        $config = new Config($this->config + [
+            'esiaCertPath' => $certPath,
+            'esiaTokenIssuer' => 'http://esia.gosuslugi.ru/',
+        ]);
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], json_encode(['access_token' => $token])),
+        ]);
+        $openId = new OpenId($config, $client);
+        $openId->setSigner($this->stubSigner());
+
+        $this->expectException(\Esia\Exceptions\InvalidClaimException::class);
+        $openId->getToken('code');
+    }
+
+    /**
+     * A validated token that lacks the ESIA subject id must be rejected instead
+     * of storing an empty oid.
+     *
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetTokenRejectsTokenWithoutSubjectId(): void
+    {
+        [$certPath, $privateKey] = $this->writeCertFixture();
+
+        $token = $this->signJwt($privateKey, [
+            'iss' => 'http://esia.gosuslugi.ru/',
+            'aud' => 'INSP03211',
+            'exp' => time() + 3600,
+        ]);
+
+        $config = new Config($this->config + [
+            'esiaCertPath' => $certPath,
+            'esiaTokenIssuer' => 'http://esia.gosuslugi.ru/',
+        ]);
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], json_encode(['access_token' => $token])),
+        ]);
+        $openId = new OpenId($config, $client);
+        $openId->setSigner($this->stubSigner());
+
+        $this->expectException(\Esia\Exceptions\InvalidClaimException::class);
+        $openId->getToken('code');
+    }
+
     private function stubSigner(): \Esia\Signer\SignerInterface
     {
         return new class implements \Esia\Signer\SignerInterface {
@@ -281,6 +379,29 @@ class OpenIdTest extends Unit
                 return 'signed';
             }
         };
+    }
+
+    /**
+     * Generate a self-signed RSA certificate, write it to the output dir and
+     * return [certPath, privateKeyPem].
+     *
+     * @return array{string, string}
+     */
+    private function writeCertFixture(): array
+    {
+        $keyResource = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        $csr = openssl_csr_new(['commonName' => 'ESIA'], $keyResource);
+        $x509 = openssl_csr_sign($csr, null, $keyResource, 1);
+        openssl_x509_export($x509, $certPem);
+        openssl_pkey_export($keyResource, $privateKey);
+
+        $certPath = codecept_output_dir('esia-cert-' . uniqid('', true) . '.pem');
+        file_put_contents($certPath, $certPem);
+
+        return [$certPath, $privateKey];
     }
 
     /**

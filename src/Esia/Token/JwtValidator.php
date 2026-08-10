@@ -83,15 +83,18 @@ class JwtValidator implements TokenValidatorInterface
     {
         $now = time();
 
-        if (isset($payload['exp']) && $now >= ((int) $payload['exp'] + $this->leeway)) {
+        $exp = $this->numericClaim($payload, 'exp');
+        if ($exp !== null && $now >= ($exp + $this->leeway)) {
             throw new TokenExpiredException('The token has expired');
         }
 
-        if (isset($payload['nbf']) && $now < ((int) $payload['nbf'] - $this->leeway)) {
+        $nbf = $this->numericClaim($payload, 'nbf');
+        if ($nbf !== null && $now < ($nbf - $this->leeway)) {
             throw new TokenExpiredException('The token is not valid yet (nbf)');
         }
 
-        if (isset($payload['iat']) && ((int) $payload['iat'] - $this->leeway) > $now) {
+        $iat = $this->numericClaim($payload, 'iat');
+        if ($iat !== null && ($iat - $this->leeway) > $now) {
             throw new InvalidClaimException('The token was issued in the future (iat)');
         }
 
@@ -107,6 +110,29 @@ class JwtValidator implements TokenValidatorInterface
         if ($this->expectedAudience !== null) {
             $this->assertAudience($payload);
         }
+    }
+
+    /**
+     * Read a JWT NumericDate claim, rejecting non-numeric values.
+     *
+     * @param array<string, mixed> $payload
+     *
+     * @throws InvalidClaimException
+     */
+    private function numericClaim(array $payload, string $name): ?int
+    {
+        if (!isset($payload[$name])) {
+            return null;
+        }
+
+        $value = $payload[$name];
+        if (!is_int($value) && !is_float($value) && !(is_string($value) && is_numeric($value))) {
+            throw new InvalidClaimException(
+                sprintf('The "%s" claim is not a valid numeric date', $name)
+            );
+        }
+
+        return (int) $value;
     }
 
     /**

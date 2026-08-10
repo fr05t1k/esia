@@ -6,6 +6,7 @@ namespace Esia;
 
 use Esia\Exceptions\AbstractEsiaException;
 use Esia\Exceptions\ForbiddenException;
+use Esia\Exceptions\InvalidClaimException;
 use Esia\Exceptions\RequestFailException;
 use Esia\Signer\Exceptions\CannotGenerateRandomIntException;
 use Esia\Signer\Exceptions\SignFailException;
@@ -222,15 +223,22 @@ class OpenId
         $this->logger->debug('Payload: ', $payload);
 
         $token = $payload['access_token'];
-        $this->config->setToken($token);
 
         # get object id from token
         $chunks = explode('.', $token);
         if ($this->tokenValidator !== null) {
             $claims = $this->tokenValidator->validate($token);
         } else {
-            $claims = json_decode($this->base64UrlSafeDecode($chunks[1]), true);
+            $claims = json_decode($this->base64UrlSafeDecode($chunks[1] ?? ''), true);
         }
+
+        if (!is_array($claims) || !isset($claims['urn:esia:sbj_id'])) {
+            throw new InvalidClaimException('The token does not contain the subject id (urn:esia:sbj_id)');
+        }
+
+        // Only accept the token into client state once it has been validated
+        // and the subject id has been extracted.
+        $this->config->setToken($token);
         $this->config->setOid((string) $claims['urn:esia:sbj_id']);
 
         return $token;

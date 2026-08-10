@@ -53,10 +53,16 @@ class JwtValidatorTest extends Unit
      */
     private function makeToken(array $claims, string $alg = 'RS256', bool $tamper = false): string
     {
+        $algos = [
+            'RS256' => OPENSSL_ALGO_SHA256,
+            'RS384' => OPENSSL_ALGO_SHA384,
+            'RS512' => OPENSSL_ALGO_SHA512,
+        ];
+
         $header = self::base64UrlEncode((string) json_encode(['typ' => 'JWT', 'alg' => $alg]));
         $payload = self::base64UrlEncode((string) json_encode($claims));
 
-        openssl_sign($header . '.' . $payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA256);
+        openssl_sign($header . '.' . $payload, $signature, $this->privateKey, $algos[$alg]);
         if ($tamper) {
             $signature = strrev($signature);
         }
@@ -91,6 +97,57 @@ class JwtValidatorTest extends Unit
 
         self::assertSame(123, $claims['urn:esia:sbj_id']);
         self::assertSame(self::ISSUER, $claims['iss']);
+    }
+
+    /**
+     * @dataProvider rsaAlgorithmProvider
+     */
+    public function testValidatesEachRsaAlgorithm(string $alg): void
+    {
+        $token = $this->makeToken($this->validClaims(), $alg);
+
+        $claims = $this->validator()->validate($token);
+
+        self::assertSame(123, $claims['urn:esia:sbj_id']);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public function rsaAlgorithmProvider(): array
+    {
+        return [
+            'RS256' => ['RS256'],
+            'RS384' => ['RS384'],
+            'RS512' => ['RS512'],
+        ];
+    }
+
+    /**
+     * A signature made with a different digest than the header advertises must
+     * be rejected (guards the alg→digest mapping).
+     */
+    public function testRejectsAlgorithmMismatch(): void
+    {
+        $header = self::base64UrlEncode((string) json_encode(['typ' => 'JWT', 'alg' => 'RS256']));
+        $payload = self::base64UrlEncode((string) json_encode($this->validClaims()));
+        openssl_sign($header . '.' . $payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA512);
+        $token = $header . '.' . $payload . '.' . self::base64UrlEncode($signature);
+
+        $this->expectException(SignatureInvalidException::class);
+        $this->validator()->validate($token);
+    }
+
+    public function testRejectsUnsupportedAlgorithm(): void
+    {
+        $token = $this->makeToken($this->validClaims());
+        // Swap the header to an unsupported algorithm while keeping a signature.
+        [, $payload, $signature] = explode('.', $token);
+        $header = self::base64UrlEncode((string) json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
+        $forged = $header . '.' . $payload . '.' . $signature;
+
+        $this->expectException(SignatureInvalidException::class);
+        $this->validator()->validate($forged);
     }
 
     public function testAcceptsClientIdAsAudience(): void
@@ -157,6 +214,44 @@ class JwtValidatorTest extends Unit
 
         $this->expectException(InvalidClaimException::class);
         $this->validator()->validate($token);
+    }
+
+    /**
+     * @dataProvider nonNumericTimeClaimProvider
+     */
+    public function testNonNumericTimeClaimThrows(string $claim): void
+    {
+        // Sign a properly-signed token whose time claim is a non-numeric string.
+        $token = $this->makeToken($this->validClaims([$claim => 'invalid']));
+
+        $this->expectException(InvalidClaimException::class);
+        $this->validator()->validate($token);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public function nonNumericTimeClaimProvider(): array
+    {
+        return [
+            'exp' => ['exp'],
+            'nbf' => ['nbf'],
+            'iat' => ['iat'],
+        ];
+    }
+
+    public function testAcceptsNumericStringTimeClaims(): void
+    {
+        $now = time();
+        $token = $this->makeToken($this->validClaims([
+            'exp' => (string) ($now + 3600),
+            'nbf' => (string) $now,
+            'iat' => (string) $now,
+        ]));
+
+        $claims = $this->validator()->validate($token);
+
+        self::assertSame(123, $claims['urn:esia:sbj_id']);
     }
 
     public function testUnsignedTokenIsRejected(): void
