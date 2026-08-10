@@ -156,6 +156,136 @@ class OpenIdTest extends Unit
 
     /**
      * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetRoles(): void
+    {
+        $config = new Config($this->config);
+        $config->setOid('123');
+        $config->setToken('test');
+
+        $elements = [
+            ['oid' => 1, 'shortName' => 'ORG1', 'chief' => true],
+            ['oid' => 2, 'shortName' => 'ORG2', 'chief' => false],
+        ];
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], json_encode(['size' => 2, 'elements' => $elements])),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        $roles = $openId->getRoles();
+        self::assertSame($elements, $roles);
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetRolesReturnsEmptyWhenNoOrganizations(): void
+    {
+        $config = new Config($this->config);
+        $config->setOid('123');
+        $config->setToken('test');
+
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{"size": 0, "elements": []}'),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        self::assertSame([], $openId->getRoles());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetOrganizations(): void
+    {
+        $config = new Config($this->config);
+        $config->setOid('123');
+        $config->setToken('test');
+
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{"size": 2, "elements": ["org-link-1", "org-link-2"]}'),
+            new Response(200, [], '{"oid": 1, "shortName": "ORG1"}'),
+            new Response(200, [], '{"oid": 2, "shortName": "ORG2"}'),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        $organizations = $openId->getOrganizations();
+        self::assertSame(
+            [
+                ['oid' => 1, 'shortName' => 'ORG1'],
+                ['oid' => 2, 'shortName' => 'ORG2'],
+            ],
+            $organizations
+        );
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetOrganizationsReturnsEmptyWhenNone(): void
+    {
+        $config = new Config($this->config);
+        $config->setOid('123');
+        $config->setToken('test');
+
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{"size": 0, "elements": []}'),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        self::assertSame([], $openId->getOrganizations());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws SignFailException
+     */
+    public function testBuildUrlExposesGeneratedState(): void
+    {
+        $config = new Config($this->config);
+        $openId = new OpenId($config);
+
+        self::assertSame('', $config->getState());
+        $openId->buildUrl();
+
+        $state = $config->getState();
+        self::assertNotEmpty($state);
+        self::assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
+            $state
+        );
+
+        // A subsequent call reuses the same persisted state.
+        $openId->buildUrl();
+        self::assertSame($state, $config->getState());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     * @throws AbstractEsiaException
+     */
+    public function testGetTokenUsesInjectedState(): void
+    {
+        $injectedState = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        $config = new Config($this->config + ['state' => $injectedState]);
+
+        $oid = '123';
+        $oidBase64 = base64_encode('{ "urn:esia:sbj_id" : ' . $oid . '}');
+        $client = $this->buildClientWithResponses([
+            new Response(200, [], '{ "access_token": "test.' . $oidBase64 . '.test"}'),
+        ]);
+        $openId = new OpenId($config, $client);
+
+        $openId->getToken('test');
+        self::assertSame($injectedState, $config->getState());
+    }
+
+    /**
+     * @throws InvalidConfigurationException
      */
     public function testBuildLogoutUrl(): void
     {

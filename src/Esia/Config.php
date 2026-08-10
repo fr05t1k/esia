@@ -59,6 +59,7 @@ class Config
 
     private string $token = '';
     private string $oid = '';
+    private string $state = '';
 
     /**
      * Config constructor.
@@ -113,6 +114,7 @@ class Config
         $this->accessType = $config['accessType'] ?? $this->accessType;
         $this->tmpPath = $config['tmpPath'] ?? $this->tmpPath;
         $this->token = $config['token'] ?? $this->token;
+        $this->state = $config['state'] ?? $this->state;
     }
 
     public function getPortalUrl(): string
@@ -198,6 +200,21 @@ class Config
     public function setToken(string $token): void
     {
         $this->token = $token;
+    }
+
+    /**
+     * The OAuth `state` (anti-CSRF nonce) generated for or supplied to the
+     * authorization request. Empty until {@see OpenId::buildUrl()} or
+     * {@see OpenId::getToken()} generates one, unless injected explicitly.
+     */
+    public function getState(): string
+    {
+        return $this->state;
+    }
+
+    public function setState(string $state): void
+    {
+        $this->state = $state;
     }
 
     public function getClientId(): string
