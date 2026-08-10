@@ -259,6 +259,23 @@ $esia->setSigner(new \Esia\Signer\CryptoProSigner(
 
 Все сигнеры поддерживают PSR-3 логгер через `setLogger()`.
 
+Сигнер и логгер также можно передать сразу в конструктор `\Esia\OpenId`
+(удобно для DI-контейнеров), не прибегая к сеттерам:
+
+```php
+$esia = new \Esia\OpenId(
+    $config,
+    $httpClient,      // ?Psr\Http\Client\ClientInterface
+    $requestFactory,  // ?Psr\Http\Message\RequestFactoryInterface
+    $streamFactory,   // ?Psr\Http\Message\StreamFactoryInterface
+    $signer,          // ?Esia\Signer\SignerInterface
+    $logger           // ?Psr\Log\LoggerInterface
+);
+```
+
+Любой из аргументов можно передать как `null` — тогда используется значение по
+умолчанию. Методы `setSigner()` и `setLogger()` продолжают работать.
+
 
 
 Токен - jwt токен которые вы получаете от ЕСИА для дальнейшего взаимодействия
