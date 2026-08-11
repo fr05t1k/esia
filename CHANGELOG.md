@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-08-10
+
+### Fixed
+
+- `CliCryptoProSigner`: убран лишний флаг `-detached` из вызова `cryptcp
+  -signf`. Команда `-signf` уже создаёт открепленную (detached) PKCS#7
+  подпись, а недокументированный `-detached` на части версий cryptcp мог
+  приводить к ошибке неизвестного параметра. Формат подписи не меняется.
+  (#97, спасибо @ilimurzin за замечание в #89)
+
 ## [3.0.0] - 2026-08-10
 
 Крупное обновление: библиотека приведена в соответствие с актуальным API ЕСИА
@@ -85,5 +95,6 @@ PSR-18/PSR-17, получила проверку JWT-маркера, first-class
   payload'а. Проверка **опциональна** и включается через `esiaCertPath` либо
   собственным `TokenValidatorInterface`. (#68, #84)
 
-[Unreleased]: https://github.com/fr05t1k/esia/compare/3.0.0...HEAD
+[Unreleased]: https://github.com/fr05t1k/esia/compare/3.0.1...HEAD
+[3.0.1]: https://github.com/fr05t1k/esia/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/fr05t1k/esia/compare/2.4.2...3.0.0
