@@ -80,10 +80,12 @@ final class CliCryptoProSigner implements SignerInterface
      */
     private function signFile(string $messageFile): string
     {
-        // ESIA's client_secret must be a detached PKCS#7 signature; -base64
-        // makes cryptcp emit base64 text instead of the default binary DER.
+        // ESIA's client_secret must be a detached PKCS#7 signature. `cryptcp
+        // -signf` already produces a detached signature (a separate `.sgn`
+        // file), so no extra flag is needed. `-base64` makes cryptcp emit
+        // base64 text instead of the default binary DER.
         $command = escapeshellarg($this->toolPath)
-            . ' -signf -detached -base64 -dir ' . escapeshellarg($this->tempDir)
+            . ' -signf -base64 -dir ' . escapeshellarg($this->tempDir)
             . ' -cert -thumbprint ' . escapeshellarg($this->thumbprint);
         if ($this->pin !== null && $this->pin !== '') {
             $command .= ' -pin ' . escapeshellarg($this->pin);
