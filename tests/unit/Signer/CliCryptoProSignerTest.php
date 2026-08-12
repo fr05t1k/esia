@@ -101,4 +101,3 @@ class CliCryptoProSignerTest extends Unit
         self::assertSame(64, strlen($raw), 'Unexpected GOST-2012-256 signature length');
     }
 }
-
