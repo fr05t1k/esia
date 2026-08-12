@@ -88,8 +88,8 @@ vendor/bin/codecept run -g gost
 
 **Живой тест КриптоПро** (`CliCryptoProSignerTest`) выполняется только если задано
 имя контейнера ключа в переменной окружения `ESIA_CRYPTOPRO_CONTAINER`
-(опционально `ESIA_CRYPTOPRO_CSPTEST` — путь до `csptest`, `ESIA_CRYPTOPRO_PIN` —
-PIN контейнера); иначе он пропускается.
+(опционально `ESIA_CRYPTOPRO_CSPTEST` — путь до `csptest`, `ESIA_CRYPTOPRO_PASSWORD` —
+пароль контейнера); иначе он пропускается.
 
 ---
 

@@ -24,10 +24,13 @@
   // было (3.0.x):
   new CliCryptoProSigner($cryptcpPath, $thumbprint, $pin, $tempDir);
   // стало:
-  new CliCryptoProSigner($container, $pin = null, $toolPath = 'csptest', $tempDir = null);
+  new CliCryptoProSigner($container, $password = null, $toolPath = 'csptest', $tempDir = null);
   ```
 
-  Теперь указывается имя контейнера ключа в CSP, а не отпечаток сертификата.
+  Теперь указывается имя контейнера ключа в CSP, а не отпечаток сертификата;
+  пароль контейнера передаётся флагом `csptest -password`. Проверено на живой
+  установке КриптоПро CSP 5.0: подпись длиной 64 байта (ГОСТ Р 34.10-2012-256)
+  формируется корректно.
   (следствие #97, спасибо @ilimurzin)
 - **BREAKING** (по формату подписи, сигнатура конструктора прежняя).
   `CryptoProSigner` (PHP-расширение КриптоПро) переведён с CAdES/PKCS#7

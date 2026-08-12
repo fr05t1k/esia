@@ -33,7 +33,7 @@ final class CliCryptoProSigner implements SignerInterface
 
     /**
      * @param string $container Name of the CSP key container (`-container`)
-     * @param string|null $pin PIN/password for the container, if any
+     * @param string|null $password Container password, if any (`-password`)
      * @param string $toolPath Path to (or name of) the `csptest` executable
      * @param string|null $tempDir Writable directory for temporary files (defaults to the system temp dir)
      *
@@ -42,7 +42,7 @@ final class CliCryptoProSigner implements SignerInterface
     public function __construct(
         private string $container,
         #[\SensitiveParameter]
-        private ?string $pin = null,
+        private ?string $password = null,
         private string $toolPath = 'csptest',
         ?string $tempDir = null
     ) {
@@ -104,8 +104,8 @@ final class CliCryptoProSigner implements SignerInterface
             . ' -keytype exchange'
             . ' -in ' . escapeshellarg($messageFile)
             . ' -out ' . escapeshellarg($signatureFile);
-        if ($this->pin !== null && $this->pin !== '') {
-            $command .= ' -pin ' . escapeshellarg($this->pin);
+        if ($this->password !== null && $this->password !== '') {
+            $command .= ' -password ' . escapeshellarg($this->password);
         }
         $command .= ' 2>&1';
 

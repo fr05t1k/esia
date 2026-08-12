@@ -10,7 +10,7 @@ use Esia\Signer\Exceptions\NoSuchTmpDirException;
 use Esia\Signer\Exceptions\SignFailException;
 
 /**
- * The `cryptcp` utility (CryptoPro CSP) is proprietary and unavailable in CI,
+ * The `csptest` utility (CryptoPro CSP) is proprietary and unavailable in CI,
  * so the actual signing test is skipped unless the tool is present. The
  * constructor-validation tests run everywhere and give real coverage.
  *
@@ -71,12 +71,12 @@ class CliCryptoProSignerTest extends Unit
         if ($container === false || $container === '') {
             $this->markTestSkipped(
                 'Set ESIA_CRYPTOPRO_CONTAINER (and optionally ESIA_CRYPTOPRO_CSPTEST/'
-                . 'ESIA_CRYPTOPRO_PIN) to run the live csptest signing test'
+                . 'ESIA_CRYPTOPRO_PASSWORD) to run the live csptest signing test'
             );
         }
 
         $tool = getenv('ESIA_CRYPTOPRO_CSPTEST') ?: 'csptest';
-        $pin = getenv('ESIA_CRYPTOPRO_PIN') ?: null;
+        $password = getenv('ESIA_CRYPTOPRO_PASSWORD') ?: null;
 
         $output = [];
         $resultCode = 0;
@@ -88,7 +88,7 @@ class CliCryptoProSignerTest extends Unit
         }
 
         $message = 'esia-cryptopro-' . bin2hex(random_bytes(8));
-        $signer = new CliCryptoProSigner($container, $pin, $tool);
+        $signer = new CliCryptoProSigner($container, $password, $tool);
 
         $signature = $signer->sign($message);
         self::assertNotEmpty($signature);

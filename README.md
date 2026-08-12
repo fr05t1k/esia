@@ -250,7 +250,7 @@ $esia->setSigner(new \Esia\Signer\CliSignerPKCS7(
 ```php
 $esia->setSigner(new \Esia\Signer\CliCryptoProSigner(
     'my-container',  // имя контейнера ключа в CSP
-    'pin',           // PIN контейнера (если задан)
+    'password',      // пароль контейнера (если задан)
     'csptest',       // путь до csptest (по умолчанию 'csptest')
     '/tmp'           // каталог для временных файлов (по умолчанию системный)
 ));
