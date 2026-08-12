@@ -230,7 +230,7 @@ GOST-подписи через CryptoPro) через `\Esia\OpenId::setTokenVali
 | `\Esia\Signer\SignerPKCS7` | Нативный `openssl_pkcs7_sign()` | Стандартный PHP с `ext-openssl`. **Не умеет ГОСТ** в обычной сборке OpenSSL — подходит только для тестов/RSA. |
 | `\Esia\Signer\CliSignerPKCS7` | Вызов `openssl smime -engine gost` | OpenSSL, собранный с GOST-движком (`libengine-gost-openssl1.1`), в `PATH`. Ключ и сертификат ГОСТ в PEM. |
 | `\Esia\Signer\CliCryptoProSigner` | Вызов утилиты `csptest` | Установленный **КриптоПро CSP** с утилитой `csptest`. Ключ ГОСТ в контейнере CSP, указывается по имени контейнера. |
-| `\Esia\Signer\CryptoProSigner` | PHP-расширение КриптоПро (`\CPStore`/`\CPSigner`) | Проприетарное PHP-расширение КриптоПро. Сертификат ГОСТ в хранилище `My` текущего пользователя. |
+| `\Esia\Signer\CryptoProSigner` | PHP-расширение КриптоПро (`\CPRawSignature`) | Проприетарное PHP-расширение КриптоПро. Сертификат ГОСТ в хранилище `My` текущего пользователя. |
 
 Пример с CLI-сигнером ГОСТ (OpenSSL + GOST-движок):
 
