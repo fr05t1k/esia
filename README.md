@@ -229,8 +229,8 @@ GOST-подписи через CryptoPro) через `\Esia\OpenId::setTokenVali
 | --- | --- | --- |
 | `\Esia\Signer\SignerPKCS7` | Нативный `openssl_pkcs7_sign()` | Стандартный PHP с `ext-openssl`. **Не умеет ГОСТ** в обычной сборке OpenSSL — подходит только для тестов/RSA. |
 | `\Esia\Signer\CliSignerPKCS7` | Вызов `openssl smime -engine gost` | OpenSSL, собранный с GOST-движком (`libengine-gost-openssl1.1`), в `PATH`. Ключ и сертификат ГОСТ в PEM. |
-| `\Esia\Signer\CliCryptoProSigner` | Вызов утилиты `cryptcp` | Установленный **КриптоПро CSP** с утилитой `cryptcp`. Сертификат ГОСТ в хранилище CSP, указывается по SHA-1 отпечатку. |
-| `\Esia\Signer\CryptoProSigner` | PHP-расширение КриптоПро (`\CPStore`/`\CPSigner`) | Проприетарное PHP-расширение КриптоПро. Сертификат ГОСТ в хранилище `My` текущего пользователя. |
+| `\Esia\Signer\CliCryptoProSigner` | Вызов утилиты `csptest` | Установленный **КриптоПро CSP** с утилитой `csptest`. Ключ ГОСТ в контейнере CSP, указывается по имени контейнера. |
+| `\Esia\Signer\CryptoProSigner` | PHP-расширение КриптоПро (`\CPRawSignature`) | Проприетарное PHP-расширение КриптоПро. Сертификат ГОСТ в хранилище `My` текущего пользователя. |
 
 Пример с CLI-сигнером ГОСТ (OpenSSL + GOST-движок):
 
@@ -243,15 +243,16 @@ $esia->setSigner(new \Esia\Signer\CliSignerPKCS7(
 ));
 ```
 
-Пример с КриптоПро через утилиту `cryptcp` (отпечаток — SHA-1 сертификата в
-хранилище CSP):
+Пример с КриптоПро через утилиту `csptest` (подпись формируется по
+методическим рекомендациям ЕСИА: «сырое» значение подписи разворачивается
+побайтово и кодируется в base64 url-safe):
 
 ```php
 $esia->setSigner(new \Esia\Signer\CliCryptoProSigner(
-    '/opt/cprocsp/bin/amd64/cryptcp', // путь до cryptcp
-    '745187e5c161cd2e3130d886f9df4492fa270685', // отпечаток сертификата
-    'pin', // PIN контейнера (если задан)
-    '/tmp' // каталог для временных файлов
+    'my-container',  // имя контейнера ключа в CSP
+    'password',      // пароль контейнера (если задан)
+    'csptest',       // путь до csptest (по умолчанию 'csptest')
+    '/tmp'           // каталог для временных файлов (по умолчанию системный)
 ));
 ```
 

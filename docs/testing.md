@@ -86,9 +86,10 @@ vendor/bin/codecept run -g gost
 
 Без gost-engine эти тесты падают локально, но проходят в CI — это ожидаемо.
 
-**Живой тест КриптоПро** (`CliCryptoProSignerTest`) выполняется только если задан
-отпечаток сертификата в переменной окружения `ESIA_CRYPTOPRO_THUMBPRINT`
-(опционально `ESIA_CRYPTOPRO_CRYPTCP` — путь до `cryptcp`); иначе он пропускается.
+**Живой тест КриптоПро** (`CliCryptoProSignerTest`) выполняется только если задано
+имя контейнера ключа в переменной окружения `ESIA_CRYPTOPRO_CONTAINER`
+(опционально `ESIA_CRYPTOPRO_CSPTEST` — путь до `csptest`, `ESIA_CRYPTOPRO_PASSWORD` —
+пароль контейнера); иначе он пропускается.
 
 ---
 

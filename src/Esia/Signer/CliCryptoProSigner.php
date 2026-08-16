@@ -10,14 +10,19 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 
 /**
- * Signs messages with CryptoPro CSP via its command-line tool `cryptcp`.
+ * Signs messages with CryptoPro CSP via its command-line utility `csptest`.
+ *
+ * Unlike a PKCS#7/CMS container, ESIA expects the *raw* GOST signature value,
+ * byte-reversed and then base64url-encoded (see the official methodology
+ * "Методические рекомендации по интеграции с ЕСИА",
+ * @see https://digital.gov.ru/ru/documents/6186/).
+ *
+ * The implementation follows the approach proven in production by
+ * {@link https://github.com/ilimurzin/esia}.
  *
  * Runtime requirements:
- *  - CryptoPro CSP installed with the `cryptcp` utility available.
- *  - A GOST R 34.10-2012 certificate + private key present in the CSP key store,
- *    referenced by its SHA-1 thumbprint.
- *
- * @see https://docs.cryptopro.ru/cades/utilities/cryptcp
+ *  - CryptoPro CSP installed with the `csptest` utility available.
+ *  - A GOST R 34.10-2012 key container holding the signing private key.
  */
 final class CliCryptoProSigner implements SignerInterface
 {
@@ -27,17 +32,18 @@ final class CliCryptoProSigner implements SignerInterface
     private string $tempDir;
 
     /**
-     * @param string $toolPath Path to (or name of) the `cryptcp` executable
-     * @param string $thumbprint SHA-1 thumbprint of the signing certificate in the CSP store
-     * @param string|null $pin PIN/password for the private key container, if any
+     * @param string $container Name of the CSP key container (`-container`)
+     * @param string|null $password Container password, if any (`-password`)
+     * @param string $toolPath Path to (or name of) the `csptest` executable
      * @param string|null $tempDir Writable directory for temporary files (defaults to the system temp dir)
      *
      * @throws NoSuchTmpDirException
      */
     public function __construct(
-        private string $toolPath,
-        private string $thumbprint,
-        private ?string $pin = null,
+        private string $container,
+        #[\SensitiveParameter]
+        private ?string $password = null,
+        private string $toolPath = 'csptest',
         ?string $tempDir = null
     ) {
         $this->tempDir = $tempDir ?? sys_get_temp_dir();
@@ -56,9 +62,14 @@ final class CliCryptoProSigner implements SignerInterface
      */
     public function sign(string $message): string
     {
-        $messageFile = tempnam($this->tempDir, 'cryptcp');
+        $messageFile = tempnam($this->tempDir, 'cprocsp');
         if ($messageFile === false) {
-            throw new SignFailException('Cannot create a temporary file for signing');
+            throw new SignFailException('Cannot create a temporary file for the message');
+        }
+        $signatureFile = tempnam($this->tempDir, 'cprocsp');
+        if ($signatureFile === false) {
+            unlink($messageFile);
+            throw new SignFailException('Cannot create a temporary file for the signature');
         }
 
         try {
@@ -67,30 +78,36 @@ final class CliCryptoProSigner implements SignerInterface
                 throw new SignFailException('Cannot write the message to the temporary file');
             }
 
-            return $this->signFile($messageFile);
+            $signature = $this->signFile($messageFile, $signatureFile);
         } finally {
             if (file_exists($messageFile)) {
                 unlink($messageFile);
             }
+            if (file_exists($signatureFile)) {
+                unlink($signatureFile);
+            }
         }
+
+        // Methodology (digital.gov.ru/6186): byte-reverse the raw signature,
+        // then base64url-encode it.
+        return $this->urlSafe(base64_encode(strrev($signature)));
     }
 
     /**
      * @throws SignFailException
      */
-    private function signFile(string $messageFile): string
+    private function signFile(string $messageFile, string $signatureFile): string
     {
-        // ESIA's client_secret must be a detached PKCS#7 signature. `cryptcp
-        // -signf` already produces a detached signature (a separate `.sgn`
-        // file), so no extra flag is needed. `-base64` makes cryptcp emit
-        // base64 text instead of the default binary DER.
         $command = escapeshellarg($this->toolPath)
-            . ' -signf -base64 -dir ' . escapeshellarg($this->tempDir)
-            . ' -cert -thumbprint ' . escapeshellarg($this->thumbprint);
-        if ($this->pin !== null && $this->pin !== '') {
-            $command .= ' -pin ' . escapeshellarg($this->pin);
+            . ' -keyset -sign GOST12_256'
+            . ' -container ' . escapeshellarg($this->container)
+            . ' -keytype exchange'
+            . ' -in ' . escapeshellarg($messageFile)
+            . ' -out ' . escapeshellarg($signatureFile);
+        if ($this->password !== null && $this->password !== '') {
+            $command .= ' -password ' . escapeshellarg($this->password);
         }
-        $command .= ' ' . escapeshellarg($messageFile) . ' 2>&1';
+        $command .= ' 2>&1';
 
         $output = [];
         $resultCode = 0;
@@ -99,17 +116,15 @@ final class CliCryptoProSigner implements SignerInterface
         if ($resultCode !== 0) {
             $errors = implode("\n", $output);
             $this->logger->error('Sign fail');
-            $this->logger->error('cryptcp error: ' . $errors);
+            $this->logger->error('csptest error: ' . $errors);
             throw new SignFailException('Failure signing: ' . $errors);
         }
 
-        $signatureFile = $messageFile . '.sgn';
-        $signed = file_get_contents($signatureFile);
-        if ($signed === false || $signed === '') {
+        $signature = file_get_contents($signatureFile);
+        if ($signature === false || $signature === '') {
             throw new SignFailException(sprintf('Cannot read the signature file %s', $signatureFile));
         }
-        unlink($signatureFile);
 
-        return $this->normalizeBase64Signature($signed);
+        return $signature;
     }
 }
